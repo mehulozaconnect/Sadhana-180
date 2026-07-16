@@ -238,6 +238,16 @@
 
   <!-- ================= TODAY ================= -->
   <div id="tab-today">
+    <div class="card" style="padding:12px 16px">
+      <div class="cfgrow" style="padding:0">
+        <label for="editDate" style="font-size:13.5px;font-weight:600">Logging for</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="editDate">
+          <button class="btn small" id="backTodayBtn" style="display:none" onclick="setEditDate(realToday)">Today</button>
+        </div>
+      </div>
+      <div class="hint" id="editHint" style="display:none;margin:8px 0 0">⏪ Backfilling a past day — everything you tick below saves to that date, and the mala bead updates.</div>
+    </div>
     <div class="card">
       <div class="todayScore">
         <div class="ring">
@@ -553,10 +563,35 @@ const DAYKEY = d => 's180:day:' + d;
 const CFGKEY = 's180:config';
 const VITKEY = 's180:vitals';
 let cfg = { start: '2026-07-15', showMeds: true };
-let today = localISO(new Date());
+const realToday = localISO(new Date());
+let today = realToday;   // the date currently being edited (defaults to actual today)
 let day = blankDay();
 let cache = {};
 let vitals = { bp:[], sugar:[], wt:[] };
+
+/* ---------------- backfill: switch editing date ---------------- */
+window.setEditDate = async (dateStr)=>{
+  if(!dateStr) return;
+  if(dateStr > realToday){ alert('Cannot log a future day.'); dateStr = realToday; }
+  if(dateStr < cfg.start) { alert('That date is before your journey start ('+cfg.start+').'); dateStr = cfg.start; }
+  today = dateStr;
+  // load that day's record
+  day = blankDay();
+  try{
+    const r = await window.storage.get(DAYKEY(today));
+    if(r && r.value) day = Object.assign(blankDay(), JSON.parse(r.value));
+  }catch(e){}
+  if(cache[today]) day = Object.assign(blankDay(), cache[today]);
+  cache[today] = day;
+  // refresh UI
+  const isPast = today !== realToday;
+  document.getElementById('editDate').value = today;
+  document.getElementById('backTodayBtn').style.display = isPast ? 'inline-block' : 'none';
+  document.getElementById('editHint').style.display = isPast ? 'block' : 'none';
+  document.getElementById('stepsIn').value = day.steps||'';
+  document.getElementById('hrIn').value = day.hr||'';
+  renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderNotes(); renderVitals();
+};
 
 function localISO(d){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -566,7 +601,7 @@ function fmt(dateStr){
   return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
 }
 function daysSince(dateStr){
-  return Math.floor((new Date(today+'T12:00:00') - new Date(dateStr+'T12:00:00'))/86400000);
+  return Math.floor((new Date(realToday+'T12:00:00') - new Date(dateStr+'T12:00:00'))/86400000);
 }
 const WATER_TARGET = 2750;
 function blankDay(){ return { meds:{}, food:{}, mouth:0, sleep:0, bowel:false, walk:false, water:0, foods:[], noteLog:[], steps:null, hr:null, notes:'' }; }
@@ -1011,10 +1046,10 @@ window.exportBackup = async ()=>{
     const blob = new Blob([JSON.stringify(dump, null, 1)], {type:'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'sadhana-backup-' + today + '.json';
+    a.download = 'sadhana-backup-' + realToday + '.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
-    await window.storage.set('s180:lastBackup', today);
+    await window.storage.set('s180:lastBackup', realToday);
     updateBackupStatus();
   }catch(e){
     alert('Export failed: ' + e.message);
@@ -1060,7 +1095,7 @@ async function updateBackupStatus(){
 /* ---------------- analysis engine ---------------- */
 function loggedDays(){
   return Object.keys(cache)
-    .filter(k => k <= today && dayScore(cache[k]).any)
+    .filter(k => k <= realToday && dayScore(cache[k]).any)
     .sort();
 }
 function mouthSeries(){
@@ -1082,7 +1117,7 @@ function linReg(pts){
 function analysis(){
   const days = loggedDays();
   const ms = mouthSeries();
-  const idxToday = dayIndex(today);
+  const idxToday = dayIndex(realToday);
   const a = { nDays: days.length, nMouth: ms.length };
 
   if(ms.length >= 3){
@@ -1244,7 +1279,7 @@ function renderScore(){
   else if(s.pct>0) msg.textContent = 'Sadhana in progress';
   else msg.textContent = "Begin today's sadhana";
   const idx = dayIndex(today);
-  document.getElementById('dayNum').textContent = 'Day ' + Math.max(1, Math.min(idx,180));
+  document.getElementById('dayNum').textContent = 'Day ' + Math.max(1, Math.min(idx,180)) + (today!==realToday?' ⏪':'');
   document.getElementById('streakNum').textContent = currentStreak();
 }
 function renderHeader(){
@@ -1391,12 +1426,12 @@ function fallbackCopy(t){
 
 /* ---------------- render: journey ---------------- */
 function currentStreak(){
-  let n=0, d=new Date(today+'T12:00:00');
+  let n=0, d=new Date(realToday+'T12:00:00');
   while(true){
     const key = localISO(d);
     const s = dayScore(cache[key]);
     if(s.full){ n++; d.setDate(d.getDate()-1); }
-    else if(key===today && s.any){ d.setDate(d.getDate()-1); }
+    else if(key===realToday && s.any){ d.setDate(d.getDate()-1); }
     else break;
     if(n>400) break;
   }
@@ -1411,23 +1446,23 @@ function renderJourney(){
     const key = localISO(d);
     const s = dayScore(cache[key]);
     let cls = 'bead';
-    if(key <= today){
+    if(key <= realToday){
       if(s.full){ cls+=' full'; full++; run++; best=Math.max(best,run); }
       else if(s.any){ cls+=' part'; run=0; }
       else run=0;
     }
-    if(key===today) cls+=' today';
+    if(key===realToday) cls+=' today';
     g.insertAdjacentHTML('beforeend', `<div class="${cls}" title="Day ${i+1} · ${key}"></div>`);
   }
   document.getElementById('stFull').textContent = full;
   document.getElementById('stBest').textContent = Math.max(best, currentStreak());
-  document.getElementById('stLeft').textContent = Math.max(0, 180 - dayIndex(today));
+  document.getElementById('stLeft').textContent = Math.max(0, 180 - dayIndex(realToday));
   renderSpark();
 }
 function renderSpark(){
   const w=340,h=90,pad=14;
   const pts=[];
-  const end = new Date(today+'T12:00:00');
+  const end = new Date(realToday+'T12:00:00');
   for(let i=13;i>=0;i--){
     const d=new Date(end); d.setDate(end.getDate()-i);
     const rec = cache[localISO(d)];
@@ -1515,6 +1550,9 @@ window.showTab = t=>{
   }
   updateInstallStatus();
   updateBackupStatus();
+  const ed = document.getElementById('editDate');
+  ed.value = today; ed.max = realToday; ed.min = cfg.start;
+  ed.addEventListener('change', e=>{ if(e.target.value) setEditDate(e.target.value); });
   renderHeader(); renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderNotes(); renderVitals(); renderJourney();
 })();
 </script>
