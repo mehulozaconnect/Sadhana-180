@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sadhana 180 — Pitta Shanti Tracker</title>
+<meta name="theme-color" content="#123F36">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root{
+    --mist:#EFF5F1; --card:#FFFFFF; --pine:#123F36; --jade:#2E7D6B;
+    --jade-soft:#DDEDE7; --moon:#8FB8AC; --lotus:#C86B85; --lotus-soft:#F7E3E9;
+    --sand:#B98A3C; --sand-soft:#F4E8D3; --line:#D8E5DF; --muted:#5F7A72;
+    --danger:#B4543C; --danger-soft:#F6E3DD; --r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--mist);color:var(--pine);
+    font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+    font-size:15px;line-height:1.45;
+    width:100%;max-width:100%;overflow-x:hidden}
+  .wrap{max-width:520px;width:100%;margin:0 auto;padding:14px 14px 90px;overflow-x:hidden}
+  .card{min-width:0}
+  .row .txt, .insrow .k, .fooditem .fx{min-width:0;overflow-wrap:break-word}
+
+  header{padding:18px 4px 14px}
+  .brandrow{display:flex;align-items:center;gap:12px}
+  .logo{width:54px;height:54px;border-radius:14px;flex-shrink:0;box-shadow:0 2px 8px rgba(18,63,54,.25)}
+  .brand{font-family:Georgia,"Noto Serif",serif;font-weight:700;font-size:26px;letter-spacing:.2px}
+  .brand em{font-style:normal;color:var(--jade)}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .daybar{display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px;
+    background:var(--pine);color:#EAF4F0;border-radius:var(--r);padding:14px 16px}
+  .daybar .big{font-family:Georgia,serif;font-size:30px;font-weight:700;line-height:1}
+  .daybar .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--moon);margin-bottom:4px}
+  .daybar .right{text-align:right}
+  .streakflame{font-size:20px}
+
+  .tabs{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);
+    display:flex;z-index:20;max-width:520px;margin:0 auto}
+  .tabs button{flex:1;padding:12px 0 max(12px, env(safe-area-inset-bottom));background:none;border:none;
+    font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer}
+  .tabs button.on{color:var(--jade)}
+  .tabs button .ico{display:block;font-size:18px;margin-bottom:2px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:14px}
+  .card h2{font-family:Georgia,serif;font-size:17px;margin-bottom:2px}
+  .card .hint{color:var(--muted);font-size:12px;margin-bottom:12px}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 8px;border-radius:20px;background:var(--jade-soft);color:var(--jade);margin-bottom:8px}
+  .tag.lotus{background:var(--lotus-soft);color:var(--lotus)}
+  .tag.warn{background:var(--danger-soft);color:var(--danger)}
+
+  .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .txt{flex:1}
+  .row .name{font-weight:600;font-size:14.5px}
+  .row .when{color:var(--muted);font-size:12px}
+  .chk{width:28px;height:28px;min-width:28px;border-radius:50%;border:2px solid var(--moon);
+    background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:15px;transition:all .15s}
+  .chk.on{background:var(--jade);border-color:var(--jade)}
+  .chk.on::after{content:"✓"}
+
+  .scale{display:flex;gap:8px;margin-top:8px}
+  .scale button{flex:1;padding:9px 0;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--card);font-weight:700;color:var(--muted);cursor:pointer;font-size:14px}
+  .scale button.on{background:var(--pine);border-color:var(--pine);color:#fff}
+  .scalelbl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
+
+  .todayScore{display:flex;align-items:center;gap:14px}
+  .ring{position:relative;width:64px;height:64px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:15px}
+
+  .mala{display:grid;grid-template-columns:repeat(15,1fr);gap:6px;margin-top:12px}
+  .bead{aspect-ratio:1;border-radius:50%;background:#E2ECE7;border:1px solid var(--line)}
+  .bead.full{background:var(--jade);border-color:var(--jade)}
+  .bead.part{background:var(--sand);border-color:var(--sand)}
+  .bead.today{outline:2px solid var(--pine);outline-offset:1.5px}
+  .malakey{display:flex;gap:14px;margin-top:10px;font-size:11.5px;color:var(--muted)}
+  .malakey span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .malakey .k1::before{background:var(--jade)} .malakey .k2::before{background:var(--sand)}
+  .malakey .k3::before{background:#E2ECE7;border:1px solid var(--line)}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px}
+  .stat{background:var(--jade-soft);border-radius:12px;padding:12px 10px;text-align:center}
+  .stat .v{font-family:Georgia,serif;font-size:22px;font-weight:700}
+  .stat .l{font-size:10.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+
+  .verdict{border-radius:var(--r);padding:18px 16px;margin-top:14px;color:#fff}
+  .verdict.good{background:linear-gradient(135deg,#1B5E4F,#2E7D6B)}
+  .verdict.watch{background:linear-gradient(135deg,#8A6420,#B98A3C)}
+  .verdict.bad{background:linear-gradient(135deg,#8A3A26,#B4543C)}
+  .verdict.na{background:linear-gradient(135deg,#4A6960,#5F7A72)}
+  .verdict .vlbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+  .verdict .vmain{font-family:Georgia,serif;font-size:21px;font-weight:700;margin:6px 0 4px;line-height:1.25}
+  .verdict .vsub{font-size:13px;opacity:.92;line-height:1.5}
+
+  .insrow{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--line);gap:10px}
+  .insrow:last-child{border-bottom:none}
+  .insrow .k{font-size:13.5px;color:var(--muted)}
+  .insrow .v{font-weight:700;font-size:14.5px;text-align:right}
+  .v.pos{color:var(--jade)} .v.neg{color:var(--danger)} .v.mid{color:var(--sand)}
+
+  .grade{display:flex;align-items:center;gap:14px}
+  .gradebox{width:58px;height:58px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    font-family:Georgia,serif;font-size:28px;font-weight:800;color:#fff;background:var(--jade)}
+  .gradebox.B{background:#5B9279}.gradebox.C{background:var(--sand)}.gradebox.D{background:#C07A4A}.gradebox.E{background:var(--danger)}
+
+  .docbox{background:#FBFDFC;border:1.5px dashed var(--moon);border-radius:10px;padding:12px;
+    font-size:12.5px;white-space:pre-wrap;line-height:1.55;margin-top:10px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .btn{display:inline-block;margin-top:10px;background:var(--pine);color:#fff;border:none;border-radius:10px;
+    padding:10px 16px;font-weight:700;font-size:13.5px;cursor:pointer}
+  .btn.small{padding:8px 14px;font-size:13px;margin-top:0}
+
+  /* vitals entry */
+  .vitgrid{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .vitgrid input{width:74px;border:1.5px solid var(--line);border-radius:10px;padding:9px 8px;
+    font:inherit;font-size:14px;background:#FBFDFC;color:var(--pine);text-align:center}
+  .vitgrid input:focus{outline:none;border-color:var(--jade)}
+  .vitlast{font-size:12px;color:var(--muted);margin-top:6px}
+  .due{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px}
+  .due.ok{background:var(--jade-soft);color:var(--jade)}
+  .due.soon{background:var(--sand-soft);color:var(--sand)}
+  .due.over{background:var(--danger-soft);color:var(--danger)}
+  .vitsec{padding:10px 0;border-bottom:1px dashed var(--line)}
+  .vitsec:last-child{border-bottom:none}
+  .vitsec .name{font-weight:600;font-size:14.5px}
+
+  /* water */
+  .waterbar{height:14px;background:#E2ECE7;border-radius:20px;overflow:hidden;margin-top:10px}
+  .waterfill{height:100%;background:linear-gradient(90deg,#4FA3C7,#2E7D9E);border-radius:20px;width:0%;transition:width .25s}
+  .waterrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px;flex-wrap:wrap}
+  .waterbtns{display:flex;gap:6px;flex-wrap:wrap}
+  .wbtn{border:1.5px solid var(--line);background:#FBFDFC;border-radius:10px;padding:8px 10px;
+    font-weight:700;font-size:13px;color:var(--pine);cursor:pointer;white-space:nowrap}
+  .wbtn.add{background:#EAF3F7;border-color:#BBD8E5;color:#20647E}
+  .waterstat{font-family:Georgia,serif;font-size:20px;font-weight:700}
+  .waterstat small{font-family:inherit;font-size:12px;color:var(--muted);font-weight:400}
+
+  /* food log */
+  .foodinput{display:flex;gap:8px;margin-top:8px}
+  .foodinput input{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:10px;
+    font:inherit;font-size:14px;background:#FBFDFC;color:var(--pine)}
+  .foodinput input:focus{outline:none;border-color:var(--jade)}
+  .fooditem{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .fooditem:last-child{border-bottom:none}
+  .fooditem .ft{color:var(--muted);font-size:11.5px;min-width:52px}
+  .fooditem .fx{flex:1}
+  .fooditem button{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px}
+
+  /* AI coach */
+  .aibox{background:#F4F1FA;border:1.5px solid #D9D0EC;border-radius:10px;padding:12px;
+    font-size:13.5px;white-space:pre-wrap;line-height:1.6;margin-top:12px;display:none}
+  .aibox.show{display:block}
+  .btn.ai{background:#5B4B8A}
+  .btn:disabled{opacity:.55}
+  .keyinput{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;
+    font:inherit;font-size:13px;background:#FBFDFC;color:var(--pine);margin-top:6px}
+  .keyinput:focus{outline:none;border-color:var(--jade)}
+  .mini{display:flex;gap:8px;margin-top:8px}
+  .mini input{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:9px;text-align:center;
+    font:inherit;font-size:14px;background:#FBFDFC;color:var(--pine)}
+  .mini input:focus{outline:none;border-color:var(--jade)}
+
+  textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font:inherit;
+    font-size:14px;resize:vertical;min-height:64px;background:#FBFDFC;color:var(--pine)}
+  textarea:focus{outline:none;border-color:var(--jade)}
+  .note{font-size:12px;color:var(--muted);background:var(--sand-soft);border-radius:10px;padding:10px 12px;margin-top:12px}
+  .sparkwrap{margin-top:10px}
+  .hidden{display:none}
+  .saving{position:fixed;top:10px;right:12px;background:var(--pine);color:#fff;font-size:11px;
+    padding:4px 10px;border-radius:20px;opacity:0;transition:opacity .2s;z-index:30}
+  .saving.show{opacity:.9}
+  input[type="date"]{border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;
+    font-size:13px;background:#FBFDFC;color:var(--pine)}
+  .cfgrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0}
+  .cfgrow label{font-size:13.5px;font-weight:600}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="saving" id="saveToast">Saved ✓</div>
+<div class="wrap">
+
+  <header>
+    <div class="brandrow">
+      <svg class="logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="Sadhana 180 logo">
+        <defs>
+          <radialGradient id="lgbg" cx="50%" cy="38%" r="80%">
+            <stop offset="0" stop-color="#1E6A59"/>
+            <stop offset="0.6" stop-color="#123F36"/>
+            <stop offset="1" stop-color="#0B2B25"/>
+          </radialGradient>
+          <linearGradient id="lgpetal" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#3E9C85"/>
+            <stop offset="1" stop-color="#7ED4BC"/>
+          </linearGradient>
+          <linearGradient id="lgpetalS" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#2E7D6B"/>
+            <stop offset="1" stop-color="#5FBFA5"/>
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" rx="112" fill="url(#lgbg)"/>
+        <path d="M 256 260 C 175 250 130 205 118 150 C 175 158 226 190 256 260 Z" fill="url(#lgpetalS)" opacity="0.9"/>
+        <path d="M 256 260 C 337 250 382 205 394 150 C 337 158 286 190 256 260 Z" fill="url(#lgpetalS)" opacity="0.9"/>
+        <path d="M 256 262 C 196 240 172 185 174 118 C 222 140 252 190 256 262 Z" fill="url(#lgpetal)"/>
+        <path d="M 256 262 C 316 240 340 185 338 118 C 290 140 260 190 256 262 Z" fill="url(#lgpetal)"/>
+        <path d="M 256 264 C 222 210 222 140 256 84 C 290 140 290 210 256 264 Z" fill="#A8E6D2"/>
+        <path d="M 62 330 L 168 330 L 192 330 L 214 286 L 244 372 L 268 302 L 284 330 L 450 330"
+              fill="none" stroke="#EAF4F0" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="450" cy="330" r="11" fill="#7ED4BC"/>
+        <text x="256" y="452" text-anchor="middle" font-family="Georgia, serif"
+              font-size="96" font-weight="bold" fill="#EAF4F0" letter-spacing="4">180</text>
+      </svg>
+      <div>
+        <div class="brand">Sadhana <em>180</em></div>
+        <div class="sub">Pitta-shanti discipline · medicines · food · mouth · vitals</div>
+      </div>
+    </div>
+    <div class="daybar">
+      <div>
+        <div class="lbl">Journey</div>
+        <div class="big" id="dayNum">Day 1</div>
+      </div>
+      <div class="right">
+        <div class="lbl">Streak</div>
+        <div class="big"><span class="streakflame">🔥</span><span id="streakNum">0</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= TODAY ================= -->
+  <div id="tab-today">
+    <div class="card">
+      <div class="todayScore">
+        <div class="ring">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="27" fill="none" stroke="#E2ECE7" stroke-width="7"/>
+            <circle id="ringArc" cx="32" cy="32" r="27" fill="none" stroke="#2E7D6B" stroke-width="7"
+              stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6"/>
+          </svg>
+          <div class="pct" id="ringPct">0%</div>
+        </div>
+        <div>
+          <div style="font-weight:700" id="scoreMsg">Begin today's sadhana</div>
+          <div class="hint" style="margin:0" id="scoreSub">Tick each dose and rule as you go</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="medCard">
+      <span class="tag">Aushadhi · till follow-up</span>
+      <h2>Medicines</h2>
+      <div class="hint">Dr. Arun Desai · follow-up after 15 days (~28 Jul)</div>
+      <div id="medRows"></div>
+      <div class="note">Soothshekhar = 30 min <b>before</b> lunch &amp; dinner. Aarogyavardhini &amp; Gaisantak = <b>after</b> food. Anchor doses to real meals, not snacks.</div>
+    </div>
+
+    <div class="card">
+      <span class="tag">Ahara Niyam</span>
+      <h2>Food discipline</h2>
+      <div class="hint">Tick only if you kept the rule the whole day</div>
+      <div id="foodRows"></div>
+    </div>
+
+    <div class="card">
+      <span class="tag" style="background:#EAF3F7;color:#20647E">Jal</span>
+      <h2>Water — target 2.75 L</h2>
+      <div class="waterrow">
+        <div class="waterstat"><span id="waterMl">0</span> ml <small>/ 2750</small></div>
+        <div class="waterbtns">
+          <button class="wbtn" onclick="addWater(-250)">−250</button>
+          <button class="wbtn add" onclick="addWater(250)">+250</button>
+          <button class="wbtn add" onclick="addWater(500)">+500</button>
+        </div>
+      </div>
+      <div class="waterbar"><div class="waterfill" id="waterFill"></div></div>
+      <div class="hint" style="margin:6px 0 0" id="waterHint">Tap +250 for a glass, +500 for a bottle</div>
+    </div>
+
+    <div class="card">
+      <span class="tag">Ahara log</span>
+      <h2>What you ate</h2>
+      <div class="hint">Log every meal and snack — the AI coach reads this</div>
+      <div class="foodinput">
+        <input type="text" id="foodTxt" placeholder="e.g. 2 chapati, choley, dal, rice">
+        <button class="btn small" onclick="addFood()">Add</button>
+      </div>
+      <div id="foodList" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <span class="tag lotus">Mukha</span>
+      <h2>Mouth today</h2>
+      <div class="hint">5 = no pain / ulcers healed &nbsp;·&nbsp; 1 = very painful</div>
+      <div class="scale" id="mouthScale"></div>
+      <div class="scalelbl"><span>Painful</span><span>Healed</span></div>
+    </div>
+
+    <div class="card">
+      <span class="tag">Sharira</span>
+      <h2>Body signals</h2>
+      <div class="row">
+        <div class="txt"><div class="name">Bowel cleared properly</div><div class="when">Morning elimination</div></div>
+        <button class="chk" id="bowelChk"></button>
+      </div>
+      <div class="row">
+        <div class="txt"><div class="name">30-minute walk done</div><div class="when">Touches BP, lipids, sleep, constipation — all at once</div></div>
+        <button class="chk" id="walkChk"></button>
+      </div>
+      <div style="margin-top:10px">
+        <div class="name" style="font-weight:600;font-size:14.5px">Sleep quality last night</div>
+        <div class="scale" id="sleepScale"></div>
+        <div class="scalelbl"><span>Poor</span><span>Deep</span></div>
+      </div>
+      <div style="margin-top:14px">
+        <div class="name" style="font-weight:600;font-size:14.5px">From Samsung Health (type at night)</div>
+        <div class="mini">
+          <input type="number" id="stepsIn" placeholder="Steps" inputmode="numeric">
+          <input type="number" id="hrIn" placeholder="Resting HR" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="tag warn">Vitals log</span>
+      <h2>BP · Sugar · Weight</h2>
+      <div class="hint">Log when due — the badges tell you when</div>
+
+      <div class="vitsec">
+        <div class="name">Blood pressure <span class="due" id="bpDue"></span></div>
+        <div class="vitgrid">
+          <input type="number" id="bpSys" placeholder="Sys" inputmode="numeric">
+          <span style="color:var(--muted)">/</span>
+          <input type="number" id="bpDia" placeholder="Dia" inputmode="numeric">
+          <button class="btn small" onclick="addBP()">Log</button>
+        </div>
+        <div class="vitlast" id="bpLast">Target: 2–3 readings/week · morning, seated, before tea</div>
+      </div>
+
+      <div class="vitsec">
+        <div class="name">Blood sugar <span class="due" id="sgDue"></span></div>
+        <div class="vitgrid">
+          <input type="number" id="sgFbs" placeholder="Fasting" inputmode="numeric">
+          <input type="number" id="sgPp" placeholder="PP (opt)" inputmode="numeric">
+          <button class="btn small" onclick="addSugar()">Log</button>
+        </div>
+        <div class="vitlast" id="sgLast">Every 20–30 days · mg/dL · fasting sample</div>
+      </div>
+
+      <div class="vitsec">
+        <div class="name">Weight <span class="due" id="wtDue"></span></div>
+        <div class="vitgrid">
+          <input type="number" id="wtKg" placeholder="kg" step="0.1" inputmode="decimal">
+          <button class="btn small" onclick="addWeight()">Log</button>
+        </div>
+        <div class="vitlast" id="wtLast">Monthly · same time of day, empty stomach</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="tag" style="background:#EAE4F5;color:#5B4B8A">AI Coach · Gemini</span>
+      <h2>How was today?</h2>
+      <div class="hint">Sends today's meals, water, doses, rules &amp; body signals to Gemini for a verdict — am I on track, consequences, limits, one fix for tomorrow</div>
+      <button class="btn ai" id="aiBtn" onclick="askAI()">Analyze my day</button>
+      <div class="aibox" id="aiOut"></div>
+      <div class="hint" id="aiKeyHint" style="margin:8px 0 0">Needs your Gemini API key once — set it in Journey → Settings</div>
+    </div>
+
+    <div class="card">
+      <h2>Day notes</h2>
+      <div class="hint">What you ate, slips, observations</div>
+      <textarea id="notes" placeholder="e.g., 4 medu vada at 11am, tea 4pm…"></textarea>
+    </div>
+  </div>
+
+  <!-- ================= INSIGHTS ================= -->
+  <div id="tab-insights" class="hidden">
+    <div id="verdictBox"></div>
+
+    <div class="card">
+      <span class="tag lotus">Trajectory</span>
+      <h2>Healing projection</h2>
+      <div class="hint">Linear trend on your daily mouth scores</div>
+      <div id="trajRows"></div>
+    </div>
+
+    <div class="card">
+      <span class="tag warn">Vitals watch</span>
+      <h2>BP · Sugar · Weight</h2>
+      <div class="hint">The silent numbers — where they're moving</div>
+      <div id="vitRows"></div>
+    </div>
+
+    <div class="card">
+      <span class="tag">Cause → Effect</span>
+      <h2>What your data proves</h2>
+      <div class="hint">Food today vs mouth tomorrow (1-day lag)</div>
+      <div id="causeRows"></div>
+    </div>
+
+    <div class="card">
+      <span class="tag">This week</span>
+      <h2>Report card</h2>
+      <div class="grade" id="gradeBox"></div>
+      <div id="weekRows" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <span class="tag warn">For 28 Jul follow-up</span>
+      <h2>Doctor summary</h2>
+      <div class="hint">Auto-generated from your logs — show or read this to Dr. Desai</div>
+      <div class="docbox" id="docSummary">Log a few days first.</div>
+      <button class="btn" onclick="copyDoc()">Copy summary</button>
+    </div>
+  </div>
+
+  <!-- ================= JOURNEY ================= -->
+  <div id="tab-journey" class="hidden">
+    <div class="card">
+      <span class="tag">180-bead mala</span>
+      <h2>The mala</h2>
+      <div class="hint">One bead per day. Complete the japa.</div>
+      <div class="mala" id="malaGrid"></div>
+      <div class="malakey">
+        <span class="k1">Full discipline</span>
+        <span class="k2">Partial</span>
+        <span class="k3">Missed</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="v" id="stFull">0</div><div class="l">Full days</div></div>
+        <div class="stat"><div class="v" id="stBest">0</div><div class="l">Best streak</div></div>
+        <div class="stat"><div class="v" id="stLeft">180</div><div class="l">Days left</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="tag lotus">Healing trend</span>
+      <h2>Mouth — last 14 days</h2>
+      <div class="hint">Watch this climb toward 5 by day 8–15</div>
+      <div class="sparkwrap" id="spark"></div>
+    </div>
+
+    <div class="card">
+      <h2>Settings</h2>
+      <div class="cfgrow">
+        <label for="startDate">Journey start date</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="cfgrow">
+        <label for="medPhase">Show medicine card</label>
+        <button class="chk on" id="medPhase" style="border-radius:8px"></button>
+      </div>
+      <div style="padding:8px 0">
+        <label style="font-size:13.5px;font-weight:600">Gemini API key (for AI Coach)</label>
+        <input type="password" class="keyinput" id="geminiKey" placeholder="Paste your key — same one as your Education Tracker">
+        <button class="btn small" style="margin-top:8px" onclick="testKey()">Save &amp; Test key</button>
+        <div class="hint" style="margin:8px 0 0" id="keyStatus">Get a free key at aistudio.google.com → Get API key. Stored only on this phone.</div>
+      </div>
+      <div style="padding:8px 0;border-top:1px dashed var(--line)">
+        <label style="font-size:13.5px;font-weight:600">Install on phone</label>
+        <div class="hint" style="margin:4px 0 8px" id="installStatus">Checking install readiness…</div>
+        <button class="btn small" id="installBtn" onclick="doInstall()">Install app</button>
+      </div>
+      <div class="note">After your 28 Jul follow-up, update per the doctor's revised advice or hide the medicine card. Food discipline, vitals and mouth tracking continue the full 180 days.</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button id="tbToday" class="on" onclick="showTab('today')"><span class="ico">☀️</span>Today</button>
+  <button id="tbInsights" onclick="showTab('insights')"><span class="ico">📈</span>Insights</button>
+  <button id="tbJourney" onclick="showTab('journey')"><span class="ico">📿</span>Journey</button>
+</div>
+
+<script>
+/* ---------------- storage shim: uses localStorage on GitHub Pages / phone ---------------- */
+if(!window.storage){
+  window.storage = {
+    async get(k){ const v = localStorage.getItem(k); return v===null ? null : {key:k, value:v}; },
+    async set(k,v){ localStorage.setItem(k, v); return {key:k, value:v}; },
+    async delete(k){ localStorage.removeItem(k); return {key:k, deleted:true}; },
+    async list(prefix){
+      const keys=[];
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(!prefix || k.startsWith(prefix)) keys.push(k);
+      }
+      return {keys, prefix};
+    }
+  };
+}
+/* ---------------- service worker for offline + install ---------------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+
+/* ---------------- config & state ---------------- */
+const MEDS = [
+  {id:'aloe_am',  name:'Aloe Vera Juice 30ml', when:'Empty stomach, ~8 am + 1 glass water'},
+  {id:'sooth_am', name:'Soothshekhar Ras — 2 tabs', when:'30 min before lunch'},
+  {id:'aar_am',   name:'Aarogyavardhini — 1 tab', when:'After lunch'},
+  {id:'gai_am',   name:'Gaisantak Vati — 1 tab', when:'After breakfast'},
+  {id:'gai_noon', name:'Gaisantak Vati — 1 tab', when:'After lunch'},
+  {id:'sooth_pm', name:'Soothshekhar Ras — 2 tabs', when:'30 min before dinner'},
+  {id:'aar_pm',   name:'Aarogyavardhini — 1 tab', when:'After dinner'},
+  {id:'gai_pm',   name:'Gaisantak Vati — 1 tab', when:'After dinner'},
+  {id:'aloe_pm',  name:'Aloe Vera Juice 30ml', when:'Evening, empty stomach'},
+  {id:'petsafa',  name:'Pet Safa — ¾ tsp', when:'Night after food, lukewarm milk'}
+];
+const FOOD = [
+  {id:'nofry',   name:'No deep-fried food', when:'Vada, bhajiya, puri, chips…'},
+  {id:'nochoc',  name:'No chocolate / maida / refined-sugar sweets', when:'Mishri is fine'},
+  {id:'teagap',  name:'Tea: 45+ min gap after meals, warm not piping', when:'Max 1–2 cups'},
+  {id:'notea4',  name:'No tea after 4 pm', when:'Caffeine at 4pm is still active at 10pm — sleeplessness rule'},
+  {id:'nospice', name:'No very spicy / sour / fermented food', when:'Pitta-cooling day'}
+];
+const RULE_SHORT = {nofry:'deep-fried', nochoc:'chocolate/maida', teagap:'tea gap', notea4:'tea after 4pm', nospice:'spicy/sour/fermented'};
+const DAYKEY = d => 's180:day:' + d;
+const CFGKEY = 's180:config';
+const VITKEY = 's180:vitals';
+let cfg = { start: '2026-07-15', showMeds: true };
+let today = localISO(new Date());
+let day = blankDay();
+let cache = {};
+let vitals = { bp:[], sugar:[], wt:[] };
+
+function localISO(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmt(dateStr){
+  const d = new Date(dateStr+'T12:00:00');
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+function daysSince(dateStr){
+  return Math.floor((new Date(today+'T12:00:00') - new Date(dateStr+'T12:00:00'))/86400000);
+}
+const WATER_TARGET = 2750;
+function blankDay(){ return { meds:{}, food:{}, mouth:0, sleep:0, bowel:false, walk:false, water:0, foods:[], steps:null, hr:null, notes:'' }; }
+function dayIndex(dateStr){
+  const ms = new Date(dateStr+'T12:00:00') - new Date(cfg.start+'T12:00:00');
+  return Math.floor(ms/86400000) + 1;
+}
+function dateOfIndex(idx){
+  const d = new Date(cfg.start+'T12:00:00'); d.setDate(d.getDate()+idx-1);
+  return localISO(d);
+}
+function isClean(d){ return d && d.food && FOOD.every(f=>d.food[f.id]); }
+function dayScore(d){
+  if(!d) return {pct:0, full:false, any:false};
+  const medIds = MEDS.map(m=>m.id), foodIds = FOOD.map(f=>f.id);
+  const medDone = medIds.filter(i=>d.meds && d.meds[i]).length;
+  const foodDone = foodIds.filter(i=>d.food && d.food[i]).length;
+  const medPart = cfg.showMeds ? medDone/medIds.length : 1;
+  const foodPart = foodDone/foodIds.length;
+  const waterPart = Math.min(1, (d.water||0)/WATER_TARGET);
+  const logPart = (d.mouth>0?0.4:0) + (d.sleep>0?0.3:0) + (d.bowel?0.3:0);
+  const pct = Math.round((medPart*0.35 + foodPart*0.30 + (d.walk?0.08:0) + waterPart*0.12 + logPart*0.15)*100);
+  const full = (cfg.showMeds ? medDone===medIds.length : true) && foodDone===foodIds.length && !!d.walk && (d.water||0)>=WATER_TARGET;
+  const any = medDone>0 || foodDone>0 || d.mouth>0 || d.sleep>0 || d.bowel || d.walk || (d.water||0)>0 || (d.foods||[]).length>0 || (d.notes||'').length>0;
+  return {pct, full, any};
+}
+
+/* ---------------- storage ---------------- */
+async function loadAll(){
+  try{
+    const c = await window.storage.get(CFGKEY);
+    if(c && c.value) cfg = Object.assign(cfg, JSON.parse(c.value));
+  }catch(e){}
+  try{
+    const v = await window.storage.get(VITKEY);
+    if(v && v.value) vitals = Object.assign(vitals, JSON.parse(v.value));
+  }catch(e){}
+  try{
+    const t = await window.storage.get(DAYKEY(today));
+    if(t && t.value) day = Object.assign(blankDay(), JSON.parse(t.value));
+  }catch(e){}
+  try{
+    const ls = await window.storage.list('s180:day:');
+    if(ls && ls.keys){
+      for(const k of ls.keys){
+        const date = k.replace('s180:day:','');
+        if(date === today) continue;
+        try{
+          const r = await window.storage.get(k);
+          if(r && r.value) cache[date] = JSON.parse(r.value);
+        }catch(e){}
+      }
+    }
+  }catch(e){}
+  cache[today] = day;
+}
+let saveT;
+function save(){
+  clearTimeout(saveT);
+  saveT = setTimeout(async ()=>{
+    try{
+      await window.storage.set(DAYKEY(today), JSON.stringify(day));
+      await window.storage.set(CFGKEY, JSON.stringify(cfg));
+      await window.storage.set(VITKEY, JSON.stringify(vitals));
+      toast();
+    }catch(e){ console.error('save failed', e); }
+  }, 350);
+}
+function toast(){
+  const el = document.getElementById('saveToast');
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 900);
+}
+
+/* ---------------- vitals ---------------- */
+window.addBP = ()=>{
+  const s = +document.getElementById('bpSys').value, d = +document.getElementById('bpDia').value;
+  if(!s || !d || s<60 || s>260 || d<40 || d>160){ alert('Enter a valid reading, e.g. 128 / 84'); return; }
+  vitals.bp.push({d: today, sys: s, dia: d});
+  document.getElementById('bpSys').value=''; document.getElementById('bpDia').value='';
+  renderVitals(); save();
+};
+window.addSugar = ()=>{
+  const f = +document.getElementById('sgFbs').value, p = +document.getElementById('sgPp').value;
+  if(!f || f<40 || f>500){ alert('Enter a valid fasting value in mg/dL'); return; }
+  const rec = {d: today, fbs: f}; if(p) rec.pp = p;
+  vitals.sugar.push(rec);
+  document.getElementById('sgFbs').value=''; document.getElementById('sgPp').value='';
+  renderVitals(); save();
+};
+window.addWeight = ()=>{
+  const w = +document.getElementById('wtKg').value;
+  if(!w || w<30 || w>200){ alert('Enter a valid weight in kg'); return; }
+  vitals.wt.push({d: today, kg: w});
+  document.getElementById('wtKg').value='';
+  renderVitals(); save();
+};
+function dueBadge(el, last, okDays, soonDays, unitTxt){
+  if(!last){ el.className='due over'; el.textContent='never logged'; return; }
+  const n = daysSince(last.d);
+  if(n <= okDays){ el.className='due ok'; el.textContent='logged '+(n===0?'today':n+'d ago'); }
+  else if(n <= soonDays){ el.className='due soon'; el.textContent='due — '+n+'d ago'; }
+  else { el.className='due over'; el.textContent='overdue — '+n+'d ago'; }
+}
+function renderVitals(){
+  const lastBp = vitals.bp[vitals.bp.length-1];
+  const lastSg = vitals.sugar[vitals.sugar.length-1];
+  const lastWt = vitals.wt[vitals.wt.length-1];
+  dueBadge(document.getElementById('bpDue'), lastBp, 3, 5);
+  dueBadge(document.getElementById('sgDue'), lastSg, 20, 30);
+  dueBadge(document.getElementById('wtDue'), lastWt, 30, 40);
+  if(lastBp) document.getElementById('bpLast').textContent =
+    'Last: '+lastBp.sys+'/'+lastBp.dia+' on '+fmt(lastBp.d)+' · '+vitals.bp.length+' readings logged';
+  if(lastSg) document.getElementById('sgLast').textContent =
+    'Last: fasting '+lastSg.fbs+(lastSg.pp?' · PP '+lastSg.pp:'')+' on '+fmt(lastSg.d)+' · next due ~'+fmt(dateOfIndex(dayIndex(lastSg.d)+25));
+  if(lastWt) document.getElementById('wtLast').textContent =
+    'Last: '+lastWt.kg+' kg on '+fmt(lastWt.d);
+}
+
+/* ---------------- water & food log & health inputs ---------------- */
+window.addWater = (ml)=>{
+  day.water = Math.max(0, (day.water||0) + ml);
+  cache[today]=day; renderWater(); renderScore(); save();
+};
+function renderWater(){
+  const w = day.water||0;
+  document.getElementById('waterMl').textContent = w;
+  document.getElementById('waterFill').style.width = Math.min(100, w/WATER_TARGET*100) + '%';
+  const left = WATER_TARGET - w;
+  document.getElementById('waterHint').textContent =
+    left>0 ? left+' ml to go — about '+Math.ceil(left/250)+' glasses' : 'Target met 💧 ('+w+' ml)';
+}
+window.addFood = ()=>{
+  const el = document.getElementById('foodTxt');
+  const t = el.value.trim();
+  if(!t) return;
+  const now = new Date();
+  const hh = now.getHours()%12||12, mm = String(now.getMinutes()).padStart(2,'0');
+  const ap = now.getHours()>=12?'pm':'am';
+  day.foods = day.foods||[];
+  day.foods.push({t: hh+':'+mm+ap, txt: t});
+  el.value='';
+  cache[today]=day; renderFoodLog(); renderScore(); save();
+};
+window.delFood = (i)=>{
+  day.foods.splice(i,1);
+  cache[today]=day; renderFoodLog(); save();
+};
+function renderFoodLog(){
+  const fl = document.getElementById('foodList');
+  const foods = day.foods||[];
+  if(!foods.length){ fl.innerHTML = '<div class="hint" style="margin:0">Nothing logged yet today</div>'; return; }
+  fl.innerHTML = foods.map((f,i)=>
+    `<div class="fooditem"><span class="ft">${f.t}</span><span class="fx">${f.txt.replace(/</g,'&lt;')}</span>
+     <button onclick="delFood(${i})">×</button></div>`).join('');
+}
+
+/* ---------------- Gemini AI coach ---------------- */
+window.askAI = async ()=>{
+  const key = (cfg.geminiKey||'').trim();
+  const out = document.getElementById('aiOut');
+  const btn = document.getElementById('aiBtn');
+  if(!key){
+    out.className='aibox show';
+    out.textContent='No API key set. Go to Journey → Settings and paste your Gemini API key (free at aistudio.google.com).';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Thinking…';
+  out.className='aibox show'; out.textContent = 'Analyzing your day…';
+
+  const medDone = MEDS.filter(m=>day.meds[m.id]).map(m=>m.name);
+  const medMissed = MEDS.filter(m=>!day.meds[m.id]).map(m=>m.name);
+  const rulesKept = FOOD.filter(f=>day.food[f.id]).map(f=>f.name);
+  const rulesBroken = FOOD.filter(f=>!day.food[f.id]).map(f=>f.name);
+  const foods = (day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ') || 'nothing logged';
+
+  const prompt =
+`You are an Ayurvedic + modern lifestyle coach. Analyze this person's day and reply in under 220 words, plain text, no markdown symbols.
+
+PROFILE: Male, 42, 69kg, 5'5", pitta-dominant, strict satvik vegetarian (no onion/garlic), mishri only sweetener. Diagnosed: constipation, acidity (APD), stomatitis (mouth ulcers), sleeplessness, BP fluctuations (unmedicated), dyslipidemia, Vit D & B deficiency. On Ayurvedic Rx: Aloe vera juice, Soothshekhar Ras, Aarogyavardhini, Gaisantak Vati, Pet Safa (day ${dayIndex(today)} of course).
+DAILY TARGETS: 2750ml water, 30-min walk, ~8000 steps, no fried food, no chocolate/maida, no very spicy/sour/fermented, tea only warm with 45-min meal gap and none after 4pm.
+
+TODAY'S LOG:
+Food eaten: ${foods}
+Water: ${day.water||0} ml of 2750
+Walk done: ${day.walk?'yes':'no'} | Steps: ${day.steps||'not logged'} | Resting HR: ${day.hr||'not logged'}
+Medicines taken: ${medDone.length? medDone.join(', ') : 'none yet'}
+Medicines pending/missed: ${medMissed.join(', ')||'none'}
+Rules kept: ${rulesKept.join(', ')||'none ticked yet'}
+Rules broken/unticked: ${rulesBroken.join(', ')||'none'}
+Mouth ulcer score: ${day.mouth||'not logged'} (1 painful – 5 healed)
+Bowel cleared: ${day.bowel?'yes':'no'} | Sleep quality: ${day.sleep||'not logged'}/5
+Notes: ${day.notes||'—'}
+
+Give exactly these sections:
+VERDICT: score the day X/10 with one line why.
+FOOD CALL: for each food eaten, right or wrong for his pitta/ulcer/acidity condition, and permissible limit if it's a sometimes-food.
+CONSEQUENCES: what today's choices do to his mouth healing, acidity, BP and sleep.
+TOMORROW'S ONE FIX: the single highest-impact change.`;
+
+  try{
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(key), {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    if(data.error){
+      out.textContent = 'Gemini error: ' + (data.error.message||'unknown') + '\n\nCheck the API key in Settings.';
+    } else {
+      const txt = data.candidates && data.candidates[0] && data.candidates[0].content
+        && data.candidates[0].content.parts.map(p=>p.text||'').join('');
+      out.textContent = txt || 'No response — try again.';
+    }
+  }catch(e){
+    out.textContent = 'Could not reach Gemini — check internet connection and try again.';
+  }
+  btn.disabled = false; btn.textContent = 'Analyze my day';
+};
+
+/* ---------------- Gemini key: save & test ---------------- */
+window.testKey = async ()=>{
+  const el = document.getElementById('geminiKey');
+  const st = document.getElementById('keyStatus');
+  const key = el.value.trim();
+  cfg.geminiKey = key;
+  try{ await window.storage.set(CFGKEY, JSON.stringify(cfg)); }catch(e){}
+  if(!key){ st.textContent = 'Key cleared.'; return; }
+  st.textContent = 'Key saved ✓ — testing with Gemini…';
+  try{
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(key), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents:[{ parts:[{ text:'Reply with exactly: OK' }] }] })
+    });
+    const data = await res.json();
+    if(data.error){
+      st.textContent = '✗ Key rejected: ' + (data.error.message||'invalid key') + '. Check for extra spaces, or generate a fresh key at aistudio.google.com.';
+    } else {
+      st.textContent = '✓ Key works! AI Coach is ready — go to Today tab and tap Analyze my day.';
+      document.getElementById('aiKeyHint').textContent = 'API key set ✓ — analysis ready';
+    }
+  }catch(e){
+    st.textContent = '✗ Could not reach Gemini — check internet and try again.';
+  }
+};
+
+/* ---------------- PWA install helper ---------------- */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  updateInstallStatus();
+});
+window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; updateInstallStatus(); });
+function updateInstallStatus(){
+  const st = document.getElementById('installStatus');
+  if(!st) return;
+  if(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches){
+    st.textContent = '✓ Already installed — you are running the app from your home screen.';
+    document.getElementById('installBtn').style.display='none';
+  } else if(deferredPrompt){
+    st.textContent = '✓ Ready to install — tap the button below.';
+  } else {
+    st.textContent = 'Install prompt not offered by this browser yet. Make sure you are in the Chrome app (not Vivo browser or a link opened inside another app). If the button does nothing, use Chrome menu ⋮ → Add to Home screen.';
+  }
+}
+window.doInstall = async ()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    try{ await deferredPrompt.userChoice; }catch(e){}
+    deferredPrompt = null;
+    updateInstallStatus();
+  } else {
+    alert('Use Chrome menu (⋮ top-right) → "Add to Home screen" or "Install app".\n\nIf that option is missing:\n1. Confirm you are in the Chrome app itself\n2. Long-press Chrome icon → App info → Permissions → allow Home screen shortcuts (Vivo blocks this by default)\n3. Reload this page and try again');
+  }
+};
+
+/* ---------------- analysis engine ---------------- */
+function loggedDays(){
+  return Object.keys(cache)
+    .filter(k => k <= today && dayScore(cache[k]).any)
+    .sort();
+}
+function mouthSeries(){
+  return loggedDays()
+    .filter(k => cache[k].mouth > 0)
+    .map(k => ({x: dayIndex(k), y: cache[k].mouth, date: k}));
+}
+function linReg(pts){
+  const n = pts.length;
+  if(n < 2) return null;
+  let sx=0, sy=0, sxy=0, sxx=0;
+  pts.forEach(p=>{ sx+=p.x; sy+=p.y; sxy+=p.x*p.y; sxx+=p.x*p.x; });
+  const denom = n*sxx - sx*sx;
+  if(denom === 0) return null;
+  const slope = (n*sxy - sx*sy)/denom;
+  const intercept = (sy - slope*sx)/n;
+  return {slope, intercept};
+}
+function analysis(){
+  const days = loggedDays();
+  const ms = mouthSeries();
+  const idxToday = dayIndex(today);
+  const a = { nDays: days.length, nMouth: ms.length };
+
+  if(ms.length >= 3){
+    const recent = ms.slice(-10);
+    const reg = linReg(recent);
+    a.first = ms[0].y; a.latest = ms[ms.length-1].y;
+    if(reg){
+      a.slope = reg.slope;
+      if(a.latest >= 5){ a.traj = 'healed'; }
+      else if(reg.slope > 0.03){
+        const daysTo5 = (5 - a.latest)/reg.slope;
+        a.healIdx = Math.round(recent[recent.length-1].x + daysTo5);
+        a.healDate = dateOfIndex(a.healIdx);
+        a.traj = reg.slope >= 0.15 ? 'fast' : 'ontrack';
+      }
+      else if(reg.slope < -0.03){ a.traj = 'declining'; }
+      else { a.traj = 'plateau'; }
+    }
+  }
+
+  let cleanNext=[], slipNext=[];
+  days.forEach(k=>{
+    const nxt = dateOfIndex(dayIndex(k)+1);
+    const nd = cache[nxt];
+    if(!nd || !nd.mouth) return;
+    const d = cache[k];
+    const anyFoodLogged = d.food && Object.keys(d.food).some(x=>d.food[x]);
+    if(isClean(d)) cleanNext.push(nd.mouth);
+    else if(anyFoodLogged || (d.notes||'').length>0 || (d.meds && Object.keys(d.meds).length)) slipNext.push(nd.mouth);
+  });
+  const avg = arr => arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : null;
+  a.cleanAvg = avg(cleanNext); a.slipAvg = avg(slipNext);
+  a.cleanN = cleanNext.length; a.slipN = slipNext.length;
+
+  const broken = {};
+  FOOD.forEach(f=>broken[f.id]=0);
+  let foodDays = 0;
+  days.forEach(k=>{
+    const d = cache[k];
+    if(!d.food) return;
+    foodDays++;
+    FOOD.forEach(f=>{ if(!d.food[f.id]) broken[f.id]++; });
+  });
+  a.foodDays = foodDays;
+  a.worstRule = FOOD.map(f=>({id:f.id, n:broken[f.id]})).sort((p,q)=>q.n-p.n)[0];
+
+  const bowelDays = days.filter(k=>cache[k].bowel).length;
+  a.bowelPct = days.length ? Math.round(bowelDays/days.length*100) : 0;
+  a.walkDays = days.filter(k=>cache[k].walk).length;
+  const wtr = days.map(k=>cache[k].water||0);
+  a.waterAvg = wtr.length ? Math.round(wtr.reduce((s,v)=>s+v,0)/wtr.length) : 0;
+  a.waterHit = days.filter(k=>(cache[k].water||0)>=WATER_TARGET).length;
+  const stp = days.map(k=>cache[k].steps).filter(v=>v>0);
+  a.stepsAvg = stp.length ? Math.round(stp.reduce((s,v)=>s+v,0)/stp.length) : null;
+  const hrs = days.map(k=>cache[k].hr).filter(v=>v>0);
+  a.hrAvg = hrs.length ? Math.round(hrs.reduce((s,v)=>s+v,0)/hrs.length) : null;
+  const sl = days.map(k=>cache[k].sleep).filter(v=>v>0);
+  a.sleepAvg = sl.length ? (sl.reduce((s,v)=>s+v,0)/sl.length).toFixed(1) : null;
+  let dosesDone=0, dosesTot=0;
+  days.forEach(k=>{
+    const d = cache[k];
+    dosesTot += MEDS.length;
+    dosesDone += MEDS.filter(m=>d.meds && d.meds[m.id]).length;
+  });
+  a.medPct = dosesTot ? Math.round(dosesDone/dosesTot*100) : 0;
+
+  function windowStats(endIdx){
+    let full=0, tracked=0, cleanD=0, walks=0;
+    for(let i=endIdx-6;i<=endIdx;i++){
+      if(i<1) continue;
+      const k = dateOfIndex(i);
+      const d = cache[k];
+      if(!d || !dayScore(d).any) continue;
+      tracked++;
+      if(dayScore(d).full) full++;
+      if(isClean(d)) cleanD++;
+      if(d.walk) walks++;
+    }
+    return {full, tracked, cleanD, walks};
+  }
+  a.wk = windowStats(idxToday);
+  a.wkPrev = windowStats(idxToday-7);
+  const rate = a.wk.tracked ? a.wk.full/7 : 0;
+  a.grade = rate>=0.85?'A':rate>=0.7?'B':rate>=0.5?'C':rate>=0.3?'D':'E';
+
+  // vitals analysis
+  if(vitals.bp.length){
+    const recent = vitals.bp.slice(-5);
+    a.bpSys = Math.round(recent.reduce((s,r)=>s+r.sys,0)/recent.length);
+    a.bpDia = Math.round(recent.reduce((s,r)=>s+r.dia,0)/recent.length);
+    a.bpN = vitals.bp.length;
+    a.bpFlag = (a.bpSys>=135 || a.bpDia>=85) ? 'high' : (a.bpSys>=125 || a.bpDia>=80) ? 'borderline' : 'ok';
+    if(vitals.bp.length>=6){
+      const older = vitals.bp.slice(0, Math.floor(vitals.bp.length/2));
+      const newer = vitals.bp.slice(Math.floor(vitals.bp.length/2));
+      const oS = older.reduce((s,r)=>s+r.sys,0)/older.length;
+      const nS = newer.reduce((s,r)=>s+r.sys,0)/newer.length;
+      a.bpTrend = nS - oS;
+    }
+  }
+  if(vitals.sugar.length){
+    const last = vitals.sugar[vitals.sugar.length-1];
+    a.sgLast = last;
+    a.sgFlag = last.fbs>=126 ? 'high' : last.fbs>=100 ? 'borderline' : 'ok';
+    if(vitals.sugar.length>=2) a.sgDelta = last.fbs - vitals.sugar[vitals.sugar.length-2].fbs;
+    a.sgDueIn = 25 - daysSince(last.d);
+  }
+  if(vitals.wt.length){
+    const last = vitals.wt[vitals.wt.length-1];
+    a.wtLast = last.kg;
+    a.wtDelta = vitals.wt.length>=2 ? last.kg - vitals.wt[0].kg : null;
+    a.bmi = (last.kg / (1.651*1.651)).toFixed(1);
+  }
+
+  a.idxToday = idxToday;
+  return a;
+}
+
+/* ---------------- render: today ---------------- */
+function renderRows(){
+  const mr = document.getElementById('medRows'); mr.innerHTML='';
+  MEDS.forEach(m=>{
+    const on = !!day.meds[m.id];
+    mr.insertAdjacentHTML('beforeend',
+      `<div class="row"><div class="txt"><div class="name">${m.name}</div><div class="when">${m.when}</div></div>
+       <button class="chk ${on?'on':''}" onclick="tog('meds','${m.id}')"></button></div>`);
+  });
+  const fr = document.getElementById('foodRows'); fr.innerHTML='';
+  FOOD.forEach(f=>{
+    const on = !!day.food[f.id];
+    fr.insertAdjacentHTML('beforeend',
+      `<div class="row"><div class="txt"><div class="name">${f.name}</div><div class="when">${f.when}</div></div>
+       <button class="chk ${on?'on':''}" onclick="tog('food','${f.id}')"></button></div>`);
+  });
+  document.getElementById('medCard').style.display = cfg.showMeds ? '' : 'none';
+}
+function renderScales(){
+  const ms = document.getElementById('mouthScale'); ms.innerHTML='';
+  const ss = document.getElementById('sleepScale'); ss.innerHTML='';
+  for(let i=1;i<=5;i++){
+    ms.insertAdjacentHTML('beforeend',
+      `<button class="${day.mouth===i?'on':''}" onclick="setScale('mouth',${i})">${i}</button>`);
+    ss.insertAdjacentHTML('beforeend',
+      `<button class="${day.sleep===i?'on':''}" onclick="setScale('sleep',${i})">${i}</button>`);
+  }
+  document.getElementById('bowelChk').classList.toggle('on', !!day.bowel);
+  document.getElementById('walkChk').classList.toggle('on', !!day.walk);
+}
+function renderScore(){
+  const s = dayScore(day);
+  const arc = document.getElementById('ringArc');
+  const C = 169.6;
+  arc.style.strokeDashoffset = C - (C * s.pct/100);
+  arc.style.stroke = s.full ? 'var(--jade)' : (s.pct>=50 ? 'var(--sand)' : 'var(--moon)');
+  document.getElementById('ringPct').textContent = s.pct + '%';
+  const msg = document.getElementById('scoreMsg');
+  if(s.full) msg.textContent = 'Full discipline — bead earned 📿';
+  else if(s.pct>=70) msg.textContent = 'Almost there — close the gaps';
+  else if(s.pct>0) msg.textContent = 'Sadhana in progress';
+  else msg.textContent = "Begin today's sadhana";
+  const idx = dayIndex(today);
+  document.getElementById('dayNum').textContent = 'Day ' + Math.max(1, Math.min(idx,180));
+  document.getElementById('streakNum').textContent = currentStreak();
+}
+function renderHeader(){
+  document.getElementById('startDate').value = cfg.start;
+  document.getElementById('medPhase').classList.toggle('on', cfg.showMeds);
+}
+
+/* ---------------- render: insights ---------------- */
+function renderInsights(){
+  const a = analysis();
+  const vb = document.getElementById('verdictBox');
+
+  let cls='na', lbl='Where you are heading', main='', sub='';
+  if(a.nMouth < 3){
+    main = 'Building your baseline';
+    sub = `Log your mouth score for ${3-a.nMouth} more day${3-a.nMouth>1?'s':''} and the engine will project your healing date, prove the food–mouth link, and flag risks.`;
+  } else if(a.traj==='healed'){
+    cls='good'; main='Mouth healed — hold the line';
+    sub='Score is at 5. The 180-day discipline is now about preventing recurrence and moving the BP/sugar/weight numbers. Do not stop early.';
+  } else if(a.traj==='fast'){
+    cls='good'; main=`Healing fast — on course for ~${fmt(a.healDate)}`;
+    sub=`Mouth score climbing ${(a.slope).toFixed(2)}/day. At this pace you heal ${a.healIdx<=15?'within the expected day 8–15 window':'by day '+a.healIdx}. Keep everything exactly as-is.`;
+  } else if(a.traj==='ontrack'){
+    cls='good'; main=`On track — projected healed ~${fmt(a.healDate)} (day ${a.healIdx})`;
+    sub = a.healIdx<=17 ? 'Within the expected day 8–15 window. Consistency is doing its job.' :
+      'Slightly slower than the ideal day-15 window — tightening the food rules will pull this date closer.';
+  } else if(a.traj==='plateau'){
+    cls='watch'; main='Plateau — mouth score not moving';
+    sub = a.idxToday>=10 ?
+      'Past day 10 with no improvement: raise this at the 28 Jul follow-up and ask about B-complex for the Vit B deficiency.' :
+      'Flat trend so far. Mucosal healing usually starts moving by day 4–7 — a few more disciplined days should show it. If still flat by day 10, flag to the doctor.';
+  } else if(a.traj==='declining'){
+    cls='bad'; main='Regressing — mouth is getting worse';
+    sub = (a.worstRule && a.worstRule.n>0) ?
+      `Most-broken rule: ${RULE_SHORT[a.worstRule.id]} (${a.worstRule.n}×). That is the first thing to fix. If decline continues 3+ days despite clean eating, contact the doctor before the follow-up.` :
+      'Trend is down despite logged discipline — contact the doctor before the scheduled follow-up.';
+  }
+  // BP override — a high BP average outranks mouth news
+  if(a.bpFlag==='high' && a.bpN>=3){
+    cls = cls==='bad' ? 'bad' : 'watch';
+    sub += ` ⚠ BP is averaging ${a.bpSys}/${a.bpDia} — this now matters more than the mouth. Discuss with a physician, not just the Ayurvedic follow-up.`;
+  }
+  vb.innerHTML = `<div class="verdict ${cls}"><div class="vlbl">${lbl}</div><div class="vmain">${main}</div><div class="vsub">${sub}</div></div>`;
+
+  // trajectory rows
+  const tr = document.getElementById('trajRows');
+  if(a.nMouth>=2){
+    const delta = a.latest - a.first;
+    tr.innerHTML =
+      insRow('Start → now', `${a.first} → ${a.latest}`, delta>0?'pos':delta<0?'neg':'mid') +
+      insRow('Trend (last 10 logs)', a.slope!=null ? (a.slope>=0?'+':'')+a.slope.toFixed(2)+' / day' : '—', a.slope>0.03?'pos':a.slope<-0.03?'neg':'mid') +
+      (a.healDate && a.traj!=='healed' ? insRow('Projected fully healed', fmt(a.healDate)+' · day '+a.healIdx, a.healIdx<=17?'pos':'mid') : '') +
+      insRow('Expected window', 'Day 8–15 (by '+fmt(dateOfIndex(15))+')', 'mid');
+  } else {
+    tr.innerHTML = '<div class="hint" style="margin:0">Need at least 2–3 daily mouth scores.</div>';
+  }
+
+  // vitals watch
+  const vr = document.getElementById('vitRows');
+  let vh = '';
+  if(a.bpN){
+    vh += insRow('BP avg (last '+Math.min(a.bpN,5)+')', a.bpSys+'/'+a.bpDia,
+      a.bpFlag==='ok'?'pos':a.bpFlag==='borderline'?'mid':'neg');
+    if(a.bpTrend!=null) vh += insRow('BP direction', (a.bpTrend<=-2?'falling ↓ '+Math.abs(a.bpTrend).toFixed(0)+' pts':a.bpTrend>=2?'rising ↑ '+a.bpTrend.toFixed(0)+' pts':'steady'), a.bpTrend<=-2?'pos':a.bpTrend>=2?'neg':'mid');
+  } else vh += insRow('BP', 'no readings yet — start this week', 'neg');
+  if(a.sgLast){
+    vh += insRow('Fasting sugar (last)', a.sgLast.fbs+' mg/dL', a.sgFlag==='ok'?'pos':a.sgFlag==='borderline'?'mid':'neg');
+    if(a.sgDelta!=null) vh += insRow('Sugar vs previous', (a.sgDelta>0?'+':'')+a.sgDelta+' mg/dL', a.sgDelta<=0?'pos':a.sgDelta<=8?'mid':'neg');
+    vh += insRow('Next sugar check', a.sgDueIn>0 ? 'in '+a.sgDueIn+' days' : 'due now', a.sgDueIn>0?'mid':'neg');
+  } else vh += insRow('Sugar', 'no reading — get a fasting test to baseline', 'neg');
+  if(a.wtLast){
+    vh += insRow('Weight', a.wtLast+' kg · BMI '+a.bmi, a.bmi<25?'pos':a.bmi<27?'mid':'neg');
+    if(a.wtDelta!=null) vh += insRow('Change since start', (a.wtDelta>0?'+':'')+a.wtDelta.toFixed(1)+' kg', a.wtDelta<=0?'pos':'mid');
+  } else vh += insRow('Weight', 'log your first weigh-in (was 69 kg on Rx)', 'mid');
+  vh += insRow('Water avg', a.waterAvg+' ml/day · target hit '+a.waterHit+'/'+a.nDays+' days', a.waterAvg>=2500?'pos':a.waterAvg>=1800?'mid':'neg');
+  if(a.stepsAvg) vh += insRow('Steps avg', a.stepsAvg.toLocaleString('en-IN')+' /day', a.stepsAvg>=8000?'pos':a.stepsAvg>=5000?'mid':'neg');
+  if(a.hrAvg) vh += insRow('Resting HR avg', a.hrAvg+' bpm', a.hrAvg<=72?'pos':a.hrAvg<=80?'mid':'neg');
+  vh += insRow('Walks this week', a.wk.walks+' / 7', a.wk.walks>=5?'pos':a.wk.walks>=3?'mid':'neg');
+  vr.innerHTML = vh;
+
+  // cause-effect
+  const cr = document.getElementById('causeRows');
+  let ch = '';
+  if(a.cleanAvg!=null && a.slipAvg!=null){
+    const diff = a.cleanAvg - a.slipAvg;
+    ch += insRow(`Mouth after CLEAN days (${a.cleanN})`, a.cleanAvg.toFixed(1)+' / 5', 'pos');
+    ch += insRow(`Mouth after SLIP days (${a.slipN})`, a.slipAvg.toFixed(1)+' / 5', diff>0.2?'neg':'mid');
+    ch += insRow('Verdict', diff>0.3 ? 'Slips are measurably slowing your healing' : diff<-0.3 ? 'No clear food effect yet — medicines doing the heavy lifting' : 'Effect not yet significant — keep logging', diff>0.3?'neg':'mid');
+  } else {
+    ch += '<div class="hint" style="margin:0">Needs a mix of clean days and slip days with next-day mouth scores. The engine compares your mouth score the day after each.</div>';
+  }
+  if(a.worstRule && a.worstRule.n>0 && a.foodDays>=3){
+    ch += insRow('Most-broken rule', RULE_SHORT[a.worstRule.id]+' ('+a.worstRule.n+'×)', 'neg');
+  }
+  ch += insRow('Bowel cleared', a.bowelPct+'% of days', a.bowelPct>=80?'pos':a.bowelPct>=50?'mid':'neg');
+  if(a.sleepAvg) ch += insRow('Avg sleep quality', a.sleepAvg+' / 5', a.sleepAvg>=3.5?'pos':'mid');
+  cr.innerHTML = ch;
+
+  // report card
+  const gb = document.getElementById('gradeBox');
+  gb.innerHTML = `<div class="gradebox ${a.grade}">${a.grade}</div>
+    <div><div style="font-weight:700">${a.wk.full} of 7 days full discipline</div>
+    <div class="hint" style="margin:0">${a.wkPrev.tracked? 'Last week: '+a.wkPrev.full+'/7 full days'+(a.wk.full>a.wkPrev.full?' — improving ↑':a.wk.full<a.wkPrev.full?' — slipping ↓':' — steady'):'First week of tracking'}</div></div>`;
+  document.getElementById('weekRows').innerHTML =
+    insRow('Clean food days this week', a.wk.cleanD+' / 7', a.wk.cleanD>=6?'pos':a.wk.cleanD>=4?'mid':'neg') +
+    insRow('Walks this week', a.wk.walks+' / 7', a.wk.walks>=5?'pos':a.wk.walks>=3?'mid':'neg') +
+    (cfg.showMeds ? insRow('Overall dose adherence', a.medPct+'%', a.medPct>=90?'pos':a.medPct>=70?'mid':'neg') : '');
+
+  // doctor summary
+  const ds = document.getElementById('docSummary');
+  if(a.nDays>=2){
+    let txt = `PATIENT SELF-LOG — Mehul Oza\n`;
+    txt += `Rx dated 13 Jul 2026 · tracked ${a.nDays} days (day ${a.idxToday} of course)\n\n`;
+    txt += `Medicine adherence: ${a.medPct}% of all doses\n`;
+    if(a.nMouth>=2) txt += `Mouth/stomatitis: ${a.first}/5 at start -> ${a.latest}/5 now (5 = healed)\n`;
+    if(a.slope!=null) txt += `Trend: ${a.slope>0.03?'improving':a.slope<-0.03?'worsening':'no change'}${a.healDate&&a.traj!=='healed'?' · projected healed ~'+fmt(a.healDate):''}\n`;
+    txt += `Bowel cleared properly: ${a.bowelPct}% of days\n`;
+    if(a.sleepAvg) txt += `Sleep quality avg: ${a.sleepAvg}/5\n`;
+    if(a.bpN) txt += `Home BP avg (last ${Math.min(a.bpN,5)} readings): ${a.bpSys}/${a.bpDia} mmHg\n`;
+    if(a.sgLast) txt += `Fasting sugar: ${a.sgLast.fbs} mg/dL${a.sgLast.pp?' · PP '+a.sgLast.pp:''} (${fmt(a.sgLast.d)})\n`;
+    if(a.wtLast) txt += `Weight: ${a.wtLast} kg (BMI ${a.bmi})\n`;
+    txt += `Walks: ${a.walkDays}/${a.nDays} days · Water avg: ${a.waterAvg} ml/day (target 2750)\n`;
+    if(a.stepsAvg) txt += `Steps avg: ${a.stepsAvg}/day${a.hrAvg?' · Resting HR avg: '+a.hrAvg+' bpm':''}\n`;
+    if(a.worstRule && a.worstRule.n>0) txt += `Diet slips: mainly ${RULE_SHORT[a.worstRule.id]} (${a.worstRule.n} days)\n`;
+    txt += `\nQuestions: (1) Continue/taper which medicines? (2) B-complex + Vit D3 for noted deficiencies & stomatitis? (3) Any local application for ulcers? (4) BP readings attached — plan for monitoring? (5) Lipid profile recheck timing?`;
+    ds.textContent = txt;
+  } else {
+    ds.textContent = 'Log a few days first — the summary builds itself.';
+  }
+}
+function insRow(k,v,cls){
+  return `<div class="insrow"><div class="k">${k}</div><div class="v ${cls||''}">${v}</div></div>`;
+}
+window.copyDoc = ()=>{
+  const t = document.getElementById('docSummary').textContent;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>toast()).catch(()=>fallbackCopy(t));
+  } else fallbackCopy(t);
+};
+function fallbackCopy(t){
+  const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta);
+  ta.select(); try{document.execCommand('copy'); toast();}catch(e){} document.body.removeChild(ta);
+}
+
+/* ---------------- render: journey ---------------- */
+function currentStreak(){
+  let n=0, d=new Date(today+'T12:00:00');
+  while(true){
+    const key = localISO(d);
+    const s = dayScore(cache[key]);
+    if(s.full){ n++; d.setDate(d.getDate()-1); }
+    else if(key===today && s.any){ d.setDate(d.getDate()-1); }
+    else break;
+    if(n>400) break;
+  }
+  return n;
+}
+function renderJourney(){
+  const g = document.getElementById('malaGrid'); g.innerHTML='';
+  const start = new Date(cfg.start+'T12:00:00');
+  let full=0, best=0, run=0;
+  for(let i=0;i<180;i++){
+    const d = new Date(start); d.setDate(start.getDate()+i);
+    const key = localISO(d);
+    const s = dayScore(cache[key]);
+    let cls = 'bead';
+    if(key <= today){
+      if(s.full){ cls+=' full'; full++; run++; best=Math.max(best,run); }
+      else if(s.any){ cls+=' part'; run=0; }
+      else run=0;
+    }
+    if(key===today) cls+=' today';
+    g.insertAdjacentHTML('beforeend', `<div class="${cls}" title="Day ${i+1} · ${key}"></div>`);
+  }
+  document.getElementById('stFull').textContent = full;
+  document.getElementById('stBest').textContent = Math.max(best, currentStreak());
+  document.getElementById('stLeft').textContent = Math.max(0, 180 - dayIndex(today));
+  renderSpark();
+}
+function renderSpark(){
+  const w=340,h=90,pad=14;
+  const pts=[];
+  const end = new Date(today+'T12:00:00');
+  for(let i=13;i>=0;i--){
+    const d=new Date(end); d.setDate(end.getDate()-i);
+    const rec = cache[localISO(d)];
+    pts.push(rec && rec.mouth ? rec.mouth : null);
+  }
+  let path='', dots='';
+  pts.forEach((v,i)=>{
+    if(v==null) return;
+    const x = pad + i*(w-2*pad)/13;
+    const y = h-pad - (v-1)*(h-2*pad)/4;
+    path += (path?' L':'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#C86B85"/>`;
+  });
+  const has = path.length>0;
+  document.getElementById('spark').innerHTML =
+    `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
+      <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#D8E5DF"/>
+      <line x1="${pad}" y1="${pad}" x2="${w-pad}" y2="${pad}" stroke="#D8E5DF" stroke-dasharray="3 4"/>
+      <text x="${pad}" y="${pad-3}" font-size="9" fill="#5F7A72">5 · healed</text>
+      ${has ? `<path d="${path}" fill="none" stroke="#C86B85" stroke-width="2.5" stroke-linejoin="round"/>${dots}`
+            : `<text x="${w/2}" y="${h/2}" font-size="12" fill="#5F7A72" text-anchor="middle">Log your mouth score daily to see the trend</text>`}
+    </svg>`;
+}
+
+/* ---------------- events ---------------- */
+window.tog = (group,id)=>{
+  day[group][id] = !day[group][id];
+  cache[today]=day; renderRows(); renderScore(); save();
+};
+window.setScale = (k,v)=>{
+  day[k] = (day[k]===v?0:v);
+  cache[today]=day; renderScales(); renderScore(); save();
+};
+document.getElementById('bowelChk').addEventListener('click',()=>{
+  day.bowel=!day.bowel; cache[today]=day; renderScales(); renderScore(); save();
+});
+document.getElementById('walkChk').addEventListener('click',()=>{
+  day.walk=!day.walk; cache[today]=day; renderScales(); renderScore(); save();
+});
+document.getElementById('stepsIn').addEventListener('input',e=>{
+  day.steps = +e.target.value || null; cache[today]=day; save();
+});
+document.getElementById('hrIn').addEventListener('input',e=>{
+  day.hr = +e.target.value || null; cache[today]=day; save();
+});
+document.getElementById('foodTxt').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); addFood(); }
+});
+document.getElementById('geminiKey').addEventListener('input',e=>{
+  cfg.geminiKey = e.target.value.trim(); save();
+  document.getElementById('aiKeyHint').textContent = cfg.geminiKey ? 'API key set ✓ — analysis ready' : 'Needs your Gemini API key once — set it in Journey → Settings';
+});
+document.getElementById('notes').addEventListener('input',e=>{
+  day.notes=e.target.value; cache[today]=day; save();
+});
+document.getElementById('startDate').addEventListener('change',e=>{
+  if(e.target.value){ cfg.start=e.target.value; renderScore(); renderJourney(); save(); }
+});
+document.getElementById('medPhase').addEventListener('click',()=>{
+  cfg.showMeds=!cfg.showMeds; renderHeader(); renderRows(); renderScore(); save();
+});
+window.showTab = t=>{
+  ['today','insights','journey'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('hidden', t!==x);
+    document.getElementById('tb'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('on', t===x);
+  });
+  if(t==='journey') renderJourney();
+  if(t==='insights') renderInsights();
+};
+
+/* ---------------- init ---------------- */
+(async function(){
+  await loadAll();
+  document.getElementById('notes').value = day.notes||'';
+  if(day.steps) document.getElementById('stepsIn').value = day.steps;
+  if(day.hr) document.getElementById('hrIn').value = day.hr;
+  if(cfg.geminiKey){
+    document.getElementById('geminiKey').value = cfg.geminiKey;
+    document.getElementById('keyStatus').textContent = 'Key saved ✓ — tap Save & Test to verify.';
+    document.getElementById('aiKeyHint').textContent = 'API key set ✓ — analysis ready';
+  }
+  updateInstallStatus();
+  renderHeader(); renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderVitals(); renderJourney();
+})();
+</script>
+</body>
+</html>
