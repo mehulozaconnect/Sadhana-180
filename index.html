@@ -335,7 +335,9 @@
         <div class="mini">
           <input type="number" id="stepsIn" placeholder="Steps" inputmode="numeric">
           <input type="number" id="hrIn" placeholder="Resting HR" inputmode="numeric">
+          <button class="btn small" style="flex:0 0 auto" onclick="logHealth()">Log</button>
         </div>
+        <div class="hint" style="margin:6px 0 0" id="healthSaved"></div>
       </div>
     </div>
 
@@ -395,6 +397,17 @@
       <button class="btn small" style="margin-top:8px;background:var(--jade)" onclick="suggestSnack()">🍽 Suggest a snack for right now</button>
       <div class="aibox" id="askOut"></div>
       <button class="btn small" id="ateItBtn" style="display:none;margin-top:8px" onclick="logAskedFood()">I ate it — add to food log</button>
+    </div>
+
+    <div class="card">
+      <span class="tag lotus">How do you feel?</span>
+      <h2>Tell the coach a symptom</h2>
+      <div class="hint">e.g. "ulcers burning", "feeling dehydrated", "acidity after lunch" — it reads your whole day from morning till now, finds the likely cause, and tells you what to do immediately</div>
+      <div class="foodinput">
+        <input type="text" id="symTxt" placeholder="What are you feeling right now?">
+        <button class="btn small ai" onclick="symptomHelp()">Help</button>
+      </div>
+      <div class="aibox" id="symOut"></div>
     </div>
 
     <div class="card">
@@ -590,6 +603,7 @@ window.setEditDate = async (dateStr)=>{
   document.getElementById('editHint').style.display = isPast ? 'block' : 'none';
   document.getElementById('stepsIn').value = day.steps||'';
   document.getElementById('hrIn').value = day.hr||'';
+  renderHealthSaved();
   renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderNotes(); renderVitals();
 };
 
@@ -1172,8 +1186,16 @@ function analysis(){
   a.waterHit = days.filter(k=>(cache[k].water||0)>=WATER_TARGET).length;
   const stp = days.map(k=>cache[k].steps).filter(v=>v>0);
   a.stepsAvg = stp.length ? Math.round(stp.reduce((s,v)=>s+v,0)/stp.length) : null;
+  if(stp.length>=6){
+    const h = Math.floor(stp.length/2);
+    a.stepsTrend = Math.round(stp.slice(h).reduce((s,v)=>s+v,0)/(stp.length-h) - stp.slice(0,h).reduce((s,v)=>s+v,0)/h);
+  }
   const hrs = days.map(k=>cache[k].hr).filter(v=>v>0);
   a.hrAvg = hrs.length ? Math.round(hrs.reduce((s,v)=>s+v,0)/hrs.length) : null;
+  if(hrs.length>=6){
+    const h2 = Math.floor(hrs.length/2);
+    a.hrTrend = Math.round(hrs.slice(h2).reduce((s,v)=>s+v,0)/(hrs.length-h2) - hrs.slice(0,h2).reduce((s,v)=>s+v,0)/h2);
+  }
   const sl = days.map(k=>cache[k].sleep).filter(v=>v>0);
   a.sleepAvg = sl.length ? (sl.reduce((s,v)=>s+v,0)/sl.length).toFixed(1) : null;
   let dosesDone=0, dosesTot=0;
@@ -1355,8 +1377,14 @@ function renderInsights(){
     if(a.wtDelta!=null) vh += insRow('Change since start', (a.wtDelta>0?'+':'')+a.wtDelta.toFixed(1)+' kg', a.wtDelta<=0?'pos':'mid');
   } else vh += insRow('Weight', 'log your first weigh-in (was 69 kg on Rx)', 'mid');
   vh += insRow('Water avg', a.waterAvg+' ml/day · target hit '+a.waterHit+'/'+a.nDays+' days', a.waterAvg>=2500?'pos':a.waterAvg>=1800?'mid':'neg');
-  if(a.stepsAvg) vh += insRow('Steps avg', a.stepsAvg.toLocaleString('en-IN')+' /day', a.stepsAvg>=8000?'pos':a.stepsAvg>=5000?'mid':'neg');
-  if(a.hrAvg) vh += insRow('Resting HR avg', a.hrAvg+' bpm', a.hrAvg<=72?'pos':a.hrAvg<=80?'mid':'neg');
+  if(a.stepsAvg){
+    vh += insRow('Steps avg', a.stepsAvg.toLocaleString('en-IN')+' /day · '+(a.stepsAvg>=8000?'good':a.stepsAvg>=5000?'below 8k target':'too sedentary'), a.stepsAvg>=8000?'pos':a.stepsAvg>=5000?'mid':'neg');
+    if(a.stepsTrend!=null) vh += insRow('Steps direction', (a.stepsTrend>=300?'improving ↑ +':a.stepsTrend<=-300?'declining ↓ ':'steady ')+(Math.abs(a.stepsTrend)>=300?Math.abs(a.stepsTrend).toLocaleString('en-IN')+'/day':''), a.stepsTrend>=300?'pos':a.stepsTrend<=-300?'neg':'mid');
+  } else vh += insRow('Steps', 'no data — log nightly from Samsung Health', 'mid');
+  if(a.hrAvg){
+    vh += insRow('Resting HR avg', a.hrAvg+' bpm · '+(a.hrAvg<=72?'healthy':a.hrAvg<=80?'okay, room to improve':'elevated — walks will lower this'), a.hrAvg<=72?'pos':a.hrAvg<=80?'mid':'neg');
+    if(a.hrTrend!=null) vh += insRow('Resting HR direction', a.hrTrend<=-2?'falling ↓ '+Math.abs(a.hrTrend)+' bpm — heart getting fitter':a.hrTrend>=2?'rising ↑ '+a.hrTrend+' bpm — watch stress & sleep':'steady', a.hrTrend<=-2?'pos':a.hrTrend>=2?'neg':'mid');
+  } else vh += insRow('Resting HR', 'no data — log nightly from Samsung Health', 'mid');
   vh += insRow('Walks this week', a.wk.walks+' / 7', a.wk.walks>=5?'pos':a.wk.walks>=3?'mid':'neg');
   vr.innerHTML = vh;
 
@@ -1502,12 +1530,63 @@ document.getElementById('bowelChk').addEventListener('click',()=>{
 document.getElementById('walkChk').addEventListener('click',()=>{
   day.walk=!day.walk; cache[today]=day; renderScales(); renderScore(); save();
 });
-document.getElementById('stepsIn').addEventListener('input',e=>{
-  day.steps = +e.target.value || null; cache[today]=day; save();
-});
-document.getElementById('hrIn').addEventListener('input',e=>{
-  day.hr = +e.target.value || null; cache[today]=day; save();
-});
+window.logHealth = ()=>{
+  const s = +document.getElementById('stepsIn').value || null;
+  const h = +document.getElementById('hrIn').value || null;
+  if(!s && !h){ alert('Type steps and/or resting HR first.'); return; }
+  if(s) day.steps = s;
+  if(h) day.hr = h;
+  cache[today]=day; save(); renderHealthSaved(); toast();
+};
+function renderHealthSaved(){
+  const el = document.getElementById('healthSaved');
+  if(day.steps || day.hr){
+    el.textContent = '✓ Logged: ' + (day.steps ? day.steps.toLocaleString('en-IN')+' steps' : '') +
+      (day.steps && day.hr ? ' · ' : '') + (day.hr ? day.hr+' bpm resting' : '');
+  } else el.textContent = '';
+}
+
+window.symptomHelp = async ()=>{
+  const el = document.getElementById('symTxt');
+  const sym = el.value.trim();
+  const out = document.getElementById('symOut');
+  if(!sym){ out.className='aibox show'; out.textContent='Type what you are feeling first.'; return; }
+  const key = (cfg.geminiKey||'').trim();
+  if(!key){ out.className='aibox show'; out.textContent='Set your Gemini API key in Journey → Settings first.'; return; }
+  out.className='aibox show'; out.textContent='Reading your day and thinking…';
+  // auto-log the symptom as a timestamped note
+  day.noteLog = day.noteLog||[];
+  day.noteLog.push({t: nowStamp(), txt: '⚠ '+sym});
+  cache[today]=day; renderNotes(); save();
+
+  const medDone = MEDS.filter(m=>day.meds[m.id]).map(m=>m.name);
+  const prompt =
+`You are an Ayurvedic + lifestyle coach doing symptom triage. Current time: ${timeNow()}, day ${dayIndex(today)} of the plan.
+
+PROFILE: ${PROFILE_TXT}
+
+HE SAYS RIGHT NOW: "${sym}"
+
+HIS FULL DAY SO FAR:
+Food eaten: ${(day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ')||'nothing logged'}
+${lastMealInfo()}
+Water so far: ${day.water||0} ml of 2750 (assess pace vs current time)
+Doses taken today: ${medDone.join(', ')||'none ticked yet'}
+Walk: ${day.walk?'done':'not yet'} | Steps: ${day.steps||'not logged'} | Resting HR: ${day.hr||'not logged'}
+Mouth score: ${day.mouth||'not logged'}/5 | Bowel cleared: ${day.bowel?'yes':'no'} | Sleep last night: ${day.sleep||'not logged'}/5
+Notes today: ${(day.noteLog||[]).map(n=>n.t+' — '+n.txt).join('; ')||'—'}
+Recent food history:
+${foodHistory(2)}
+
+Reply under 140 words, plain text, no markdown:
+LIKELY CAUSE: connect the symptom to SPECIFIC items in his day above (low water pace, a particular food, missed dose, time since meal). If data is missing, say what to log.
+DO NOW: 2-3 immediate, safe, satvik home actions (sips of cool water/cold milk, soaked mishri water, rest, etc). Do NOT suggest new medicines or changing his prescription.
+AVOID NEXT FEW HOURS: 1-2 things.
+SEE A DOCTOR IF: one line on the red-flag version of this symptom.`;
+
+  const r = await callGemini(key, prompt);
+  out.textContent = r.ok ? r.text : 'Gemini error: '+r.error;
+};
 document.getElementById('foodTxt').addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); addFood(); }
 });
@@ -1517,6 +1596,9 @@ document.getElementById('geminiKey').addEventListener('input',e=>{
 });
 document.getElementById('noteTxt').addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); addNote(); }
+});
+document.getElementById('symTxt').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); symptomHelp(); }
 });
 document.getElementById('startDate').addEventListener('change',e=>{
   if(e.target.value){ cfg.start=e.target.value; renderScore(); renderJourney(); save(); }
@@ -1543,6 +1625,7 @@ window.showTab = t=>{
   }
   if(day.steps) document.getElementById('stepsIn').value = day.steps;
   if(day.hr) document.getElementById('hrIn').value = day.hr;
+  renderHealthSaved();
   if(cfg.geminiKey){
     document.getElementById('geminiKey').value = cfg.geminiKey;
     document.getElementById('keyStatus').textContent = 'Key saved ✓ — tap Save & Test to verify.';
