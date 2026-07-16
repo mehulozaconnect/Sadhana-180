@@ -165,7 +165,7 @@
     font:inherit;font-size:13px;background:#FBFDFC;color:var(--pine);margin-top:6px}
   .keyinput:focus{outline:none;border-color:var(--jade)}
   .mini{display:flex;gap:8px;margin-top:8px}
-  .mini input{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:9px;text-align:center;
+  .mini input{flex:1 1 0;width:100%;min-width:0;border:1.5px solid var(--line);border-radius:10px;padding:9px 6px;text-align:center;
     font:inherit;font-size:14px;background:#FBFDFC;color:var(--pine)}
   .mini input:focus{outline:none;border-color:var(--jade)}
 
@@ -375,9 +375,26 @@
     </div>
 
     <div class="card">
+      <span class="tag" style="background:#EAE4F5;color:#5B4B8A">Ask the coach</span>
+      <h2>Hungry? Ask before you eat</h2>
+      <div class="hint">Type a food to get a yes/no with consequences — it remembers your last 7 days, so repeat indulgences get blocked. Or just ask for a snack idea.</div>
+      <div class="foodinput">
+        <input type="text" id="askTxt" placeholder="e.g. vadapav / samosa / poha">
+        <button class="btn small ai" onclick="canIEat()">Can I eat this?</button>
+      </div>
+      <button class="btn small" style="margin-top:8px;background:var(--jade)" onclick="suggestSnack()">🍽 Suggest a snack for right now</button>
+      <div class="aibox" id="askOut"></div>
+      <button class="btn small" id="ateItBtn" style="display:none;margin-top:8px" onclick="logAskedFood()">I ate it — add to food log</button>
+    </div>
+
+    <div class="card">
       <h2>Day notes</h2>
-      <div class="hint">What you ate, slips, observations</div>
-      <textarea id="notes" placeholder="e.g., 4 medu vada at 11am, tea 4pm…"></textarea>
+      <div class="hint">Anything — slips, symptoms, feelings, observations. Each entry is time-stamped.</div>
+      <div class="foodinput">
+        <input type="text" id="noteTxt" placeholder="e.g. slight burning after lunch">
+        <button class="btn small" onclick="addNote()">Log</button>
+      </div>
+      <div id="noteList" style="margin-top:8px"></div>
     </div>
   </div>
 
@@ -552,7 +569,7 @@ function daysSince(dateStr){
   return Math.floor((new Date(today+'T12:00:00') - new Date(dateStr+'T12:00:00'))/86400000);
 }
 const WATER_TARGET = 2750;
-function blankDay(){ return { meds:{}, food:{}, mouth:0, sleep:0, bowel:false, walk:false, water:0, foods:[], steps:null, hr:null, notes:'' }; }
+function blankDay(){ return { meds:{}, food:{}, mouth:0, sleep:0, bowel:false, walk:false, water:0, foods:[], noteLog:[], steps:null, hr:null, notes:'' }; }
 function dayIndex(dateStr){
   const ms = new Date(dateStr+'T12:00:00') - new Date(cfg.start+'T12:00:00');
   return Math.floor(ms/86400000) + 1;
@@ -573,7 +590,7 @@ function dayScore(d){
   const logPart = (d.mouth>0?0.4:0) + (d.sleep>0?0.3:0) + (d.bowel?0.3:0);
   const pct = Math.round((medPart*0.35 + foodPart*0.30 + (d.walk?0.08:0) + waterPart*0.12 + logPart*0.15)*100);
   const full = (cfg.showMeds ? medDone===medIds.length : true) && foodDone===foodIds.length && !!d.walk && (d.water||0)>=WATER_TARGET;
-  const any = medDone>0 || foodDone>0 || d.mouth>0 || d.sleep>0 || d.bowel || d.walk || (d.water||0)>0 || (d.foods||[]).length>0 || (d.notes||'').length>0;
+  const any = medDone>0 || foodDone>0 || d.mouth>0 || d.sleep>0 || d.bowel || d.walk || (d.water||0)>0 || (d.foods||[]).length>0 || (d.noteLog||[]).length>0 || (d.notes||'').length>0;
   return {pct, full, any};
 }
 
@@ -686,11 +703,8 @@ window.addFood = ()=>{
   const el = document.getElementById('foodTxt');
   const t = el.value.trim();
   if(!t) return;
-  const now = new Date();
-  const hh = now.getHours()%12||12, mm = String(now.getMinutes()).padStart(2,'0');
-  const ap = now.getHours()>=12?'pm':'am';
   day.foods = day.foods||[];
-  day.foods.push({t: hh+':'+mm+ap, txt: t});
+  day.foods.push({t: nowStamp(), txt: t});
   el.value='';
   cache[today]=day; renderFoodLog(); renderScore(); save();
 };
@@ -727,28 +741,29 @@ window.askAI = async ()=>{
   const foods = (day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ') || 'nothing logged';
 
   const prompt =
-`You are an Ayurvedic + modern lifestyle coach. Analyze this person's day and reply in under 220 words, plain text, no markdown symbols.
+`You are an Ayurvedic + modern lifestyle coach. Analyze this person's day SO FAR and reply in under 220 words, plain text, no markdown symbols.
 
-PROFILE: Male, 42, 69kg, 5'5", pitta-dominant, strict satvik vegetarian (no onion/garlic), mishri only sweetener. Diagnosed: constipation, acidity (APD), stomatitis (mouth ulcers), sleeplessness, BP fluctuations (unmedicated), dyslipidemia, Vit D & B deficiency. On Ayurvedic Rx: Aloe vera juice, Soothshekhar Ras, Aarogyavardhini, Gaisantak Vati, Pet Safa (day ${dayIndex(today)} of course).
-DAILY TARGETS: 2750ml water, 30-min walk, ~8000 steps, no fried food, no chocolate/maida, no very spicy/sour/fermented, tea only warm with 45-min meal gap and none after 4pm.
+CURRENT TIME: ${timeNow()}. IMPORTANT: this may be a mid-day check. Doses/rules whose natural time has NOT yet passed (e.g. dinner doses, night Pet Safa, evening water) are PENDING, not missed — do not penalize them. Judge water as pace-for-the-time-of-day, not final total. Comment ONLY on what is actually logged below — do not invent foods, teas, or events that are not listed.
+
+PROFILE: ${PROFILE_TXT} Day ${dayIndex(today)} of the treatment course.
 
 TODAY'S LOG:
 Food eaten: ${foods}
-Water: ${day.water||0} ml of 2750
-Walk done: ${day.walk?'yes':'no'} | Steps: ${day.steps||'not logged'} | Resting HR: ${day.hr||'not logged'}
-Medicines taken: ${medDone.length? medDone.join(', ') : 'none yet'}
-Medicines pending/missed: ${medMissed.join(', ')||'none'}
-Rules kept: ${rulesKept.join(', ')||'none ticked yet'}
-Rules broken/unticked: ${rulesBroken.join(', ')||'none'}
+Water so far: ${day.water||0} ml of 2750
+Walk done: ${day.walk?'yes':'not yet'} | Steps: ${day.steps||'not logged'} | Resting HR: ${day.hr||'not logged'}
+Medicine doses ticked: ${medDone.length? medDone.join(', ') : 'none yet'}
+Doses not ticked yet: ${medMissed.join(', ')||'none'}
+Rules ticked as kept: ${rulesKept.join(', ')||'none ticked yet'}
+Rules not ticked: ${rulesBroken.join(', ')||'none'}
 Mouth ulcer score: ${day.mouth||'not logged'} (1 painful – 5 healed)
 Bowel cleared: ${day.bowel?'yes':'no'} | Sleep quality: ${day.sleep||'not logged'}/5
-Notes: ${day.notes||'—'}
+Timestamped notes: ${(day.noteLog||[]).map(n=>n.t+' — '+n.txt).join('; ')||'—'}
 
 Give exactly these sections:
-VERDICT: score the day X/10 with one line why.
-FOOD CALL: for each food eaten, right or wrong for his pitta/ulcer/acidity condition, and permissible limit if it's a sometimes-food.
-CONSEQUENCES: what today's choices do to his mouth healing, acidity, BP and sleep.
-TOMORROW'S ONE FIX: the single highest-impact change.`;
+VERDICT: score the day-so-far X/10 with one line why (do not deduct for pending items).
+FOOD CALL: for each food actually eaten, right or wrong for his pitta/ulcer/acidity condition, and permissible limit if it's a sometimes-food.
+CONSEQUENCES: what today's actual choices do to his mouth healing, acidity, BP and sleep.
+NEXT MOVE: the single highest-impact action for the REST of today (pending doses, water gap, walk), then one fix for tomorrow.`;
 
   try{
     const r = await callGemini(key, prompt);
@@ -761,6 +776,134 @@ TOMORROW'S ONE FIX: the single highest-impact change.`;
     out.textContent = 'Could not reach Gemini — check internet connection and try again.';
   }
   btn.disabled = false; btn.textContent = 'Analyze my day';
+};
+
+/* ---------------- note log ---------------- */
+function nowStamp(){
+  const now = new Date();
+  const hh = now.getHours()%12||12, mm = String(now.getMinutes()).padStart(2,'0');
+  return hh+':'+mm+(now.getHours()>=12?'pm':'am');
+}
+window.addNote = ()=>{
+  const el = document.getElementById('noteTxt');
+  const t = el.value.trim();
+  if(!t) return;
+  day.noteLog = day.noteLog||[];
+  day.noteLog.push({t: nowStamp(), txt: t});
+  el.value='';
+  cache[today]=day; renderNotes(); save();
+};
+window.delNote = (i)=>{
+  day.noteLog.splice(i,1);
+  cache[today]=day; renderNotes(); save();
+};
+function renderNotes(){
+  const nl = document.getElementById('noteList');
+  const notes = day.noteLog||[];
+  if(!notes.length){ nl.innerHTML = '<div class="hint" style="margin:0">No notes yet today</div>'; return; }
+  nl.innerHTML = notes.map((n,i)=>
+    `<div class="fooditem"><span class="ft">${n.t}</span><span class="fx">${n.txt.replace(/</g,'&lt;')}</span>
+     <button onclick="delNote(${i})">×</button></div>`).join('');
+}
+
+/* ---------------- shared context for AI ---------------- */
+function foodHistory(daysBack){
+  const lines = [];
+  for(let i=daysBack;i>=1;i--){
+    const d = new Date(today+'T12:00:00'); d.setDate(d.getDate()-i);
+    const key = localISO(d);
+    const rec = cache[key];
+    if(rec && rec.foods && rec.foods.length){
+      lines.push(fmt(key)+': '+rec.foods.map(f=>f.txt).join('; '));
+    }
+  }
+  return lines.length ? lines.join('\n') : 'no food history logged';
+}
+function timeNow(){
+  const now = new Date();
+  return now.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true});
+}
+const PROFILE_TXT = `Male, 42, 69kg, 5'5", pitta-dominant, strict satvik vegetarian (NO onion, NO garlic, no eggs/meat), mishri is his only accepted sweetener. Lives in Malad West, Mumbai. Diagnosed: constipation, acidity (APD), stomatitis (mouth ulcers, currently healing), sleeplessness, BP fluctuations (unmedicated), dyslipidemia, Vit D & B deficiency. On Ayurvedic treatment (Soothshekhar Ras, Aarogyavardhini, Gaisantak Vati, Aloe vera, Pet Safa). Rules: no deep-fried, no chocolate/maida/refined sugar, no very spicy/sour/fermented, tea only warm with 45-min meal gap and none after 4pm, 2750ml water/day, 30-min walk.`;
+
+/* ---------------- can I eat this? ---------------- */
+window.canIEat = async ()=>{
+  const el = document.getElementById('askTxt');
+  const foodAsk = el.value.trim();
+  const out = document.getElementById('askOut');
+  const ateBtn = document.getElementById('ateItBtn');
+  ateBtn.style.display='none';
+  if(!foodAsk){ out.className='aibox show'; out.textContent='Type the food first — e.g. "vadapav" or "1 samosa".'; return; }
+  const key = (cfg.geminiKey||'').trim();
+  if(!key){ out.className='aibox show'; out.textContent='Set your Gemini API key in Journey → Settings first.'; return; }
+  out.className='aibox show'; out.textContent='Checking "'+foodAsk+'"…';
+
+  const prompt =
+`You are a strict but kind Ayurvedic diet gatekeeper. Current time: ${timeNow()}, day ${dayIndex(today)} of a 180-day discipline plan.
+
+PROFILE: ${PROFILE_TXT}
+
+EATEN TODAY SO FAR: ${(day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ')||'nothing logged'}
+Water so far: ${day.water||0} ml. Mouth ulcer score: ${day.mouth||'not logged'} (1 painful – 5 healed).
+
+FOOD HISTORY LAST 7 DAYS (check for repeat indulgences — junk/fried/heavy items should NOT be allowed two days in a row, max 1-2 times per week):
+${foodHistory(7)}
+
+HE IS ASKING: "Can I eat ${foodAsk} right now?"
+
+Reply in under 120 words, plain text, no markdown:
+ANSWER: YES / NO / LIMITED (with exact quantity if limited).
+WHY: 1-2 lines tied to his conditions and the current time of day.
+HISTORY CHECK: if he had this or a similar indulgence in the last 1-2 days per the history above, say so and make the answer NO.
+IF YOU EAT IT: one line on today's consequence and this week's permissible limit.
+BETTER RIGHT NOW: one satvik Mumbai-available alternative.`;
+
+  const r = await callGemini(key, prompt);
+  if(r.ok){
+    out.textContent = r.text;
+    ateBtn.style.display='inline-block';
+    ateBtn.dataset.food = foodAsk;
+  } else {
+    out.textContent = 'Gemini error: '+r.error;
+  }
+};
+window.logAskedFood = ()=>{
+  const f = document.getElementById('ateItBtn').dataset.food;
+  if(!f) return;
+  day.foods = day.foods||[];
+  day.foods.push({t: nowStamp(), txt: f});
+  cache[today]=day; renderFoodLog(); renderScore(); save();
+  document.getElementById('ateItBtn').style.display='none';
+  document.getElementById('askTxt').value='';
+  toast();
+};
+
+/* ---------------- suggest a snack now ---------------- */
+window.suggestSnack = async ()=>{
+  const out = document.getElementById('askOut');
+  document.getElementById('ateItBtn').style.display='none';
+  const key = (cfg.geminiKey||'').trim();
+  if(!key){ out.className='aibox show'; out.textContent='Set your Gemini API key in Journey → Settings first.'; return; }
+  out.className='aibox show'; out.textContent='Thinking of something for '+timeNow()+'…';
+
+  const prompt =
+`You are an Ayurvedic diet coach. Current time: ${timeNow()}, Mumbai, day ${dayIndex(today)} of a 180-day plan.
+
+PROFILE: ${PROFILE_TXT}
+
+EATEN TODAY SO FAR: ${(day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ')||'nothing logged'}
+Water so far: ${day.water||0} ml. Mouth ulcer score: ${day.mouth||'not logged'}/5.
+Recent food history:
+${foodHistory(3)}
+
+He is hungry RIGHT NOW and wants a snack. Suggest 2-3 satvik vegetarian options (no onion, no garlic) that are: pitta-cooling, gentle on mouth ulcers and acidity, appropriate for this exact time of day, and easily available in a Mumbai home or local shop. Consider what he has already eaten today to avoid repetition and excess heaviness. If it is close to dinner time, keep it light and say so.
+
+Under 110 words, plain text, no markdown. Format:
+BEST PICK: item + one-line why.
+ALSO GOOD: 1-2 more with a word each.
+SKIP RIGHT NOW: one tempting-but-wrong option and why.`;
+
+  const r = await callGemini(key, prompt);
+  out.textContent = r.ok ? r.text : 'Gemini error: '+r.error;
 };
 
 /* ---------------- Gemini call with model fallback ---------------- */
@@ -1328,8 +1471,8 @@ document.getElementById('geminiKey').addEventListener('input',e=>{
   cfg.geminiKey = e.target.value.trim(); save();
   document.getElementById('aiKeyHint').textContent = cfg.geminiKey ? 'API key set ✓ — analysis ready' : 'Needs your Gemini API key once — set it in Journey → Settings';
 });
-document.getElementById('notes').addEventListener('input',e=>{
-  day.notes=e.target.value; cache[today]=day; save();
+document.getElementById('noteTxt').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); addNote(); }
 });
 document.getElementById('startDate').addEventListener('change',e=>{
   if(e.target.value){ cfg.start=e.target.value; renderScore(); renderJourney(); save(); }
@@ -1349,7 +1492,11 @@ window.showTab = t=>{
 /* ---------------- init ---------------- */
 (async function(){
   await loadAll();
-  document.getElementById('notes').value = day.notes||'';
+  // migrate old free-text notes into the timestamped log once
+  if(day.notes && !(day.noteLog||[]).length){
+    day.noteLog = [{t:'earlier', txt: day.notes}];
+    day.notes = '';
+  }
   if(day.steps) document.getElementById('stepsIn').value = day.steps;
   if(day.hr) document.getElementById('hrIn').value = day.hr;
   if(cfg.geminiKey){
@@ -1359,7 +1506,7 @@ window.showTab = t=>{
   }
   updateInstallStatus();
   updateBackupStatus();
-  renderHeader(); renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderVitals(); renderJourney();
+  renderHeader(); renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderNotes(); renderVitals(); renderJourney();
 })();
 </script>
 </body>
