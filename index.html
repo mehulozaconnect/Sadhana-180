@@ -465,6 +465,15 @@
         <div class="hint" style="margin:8px 0 0" id="keyStatus">Get a free key at aistudio.google.com → Get API key. Stored only on this phone.</div>
       </div>
       <div style="padding:8px 0;border-top:1px dashed var(--line)">
+        <label style="font-size:13.5px;font-weight:600">Backup &amp; restore</label>
+        <div class="hint" style="margin:4px 0 8px" id="backupStatus">Your data lives only on this phone — export a backup regularly.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn small" onclick="exportBackup()">Export backup</button>
+          <button class="btn small" style="background:var(--jade)" onclick="document.getElementById('importFile').click()">Import backup</button>
+        </div>
+        <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+      </div>
+      <div style="padding:8px 0;border-top:1px dashed var(--line)">
         <label style="font-size:13.5px;font-weight:600">Install on phone</label>
         <div class="hint" style="margin:4px 0 8px" id="installStatus">Checking install readiness…</div>
         <button class="btn small" id="installBtn" onclick="doInstall()">Install app</button>
@@ -742,24 +751,47 @@ CONSEQUENCES: what today's choices do to his mouth healing, acidity, BP and slee
 TOMORROW'S ONE FIX: the single highest-impact change.`;
 
   try{
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(key), {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
-    });
-    const data = await res.json();
-    if(data.error){
-      out.textContent = 'Gemini error: ' + (data.error.message||'unknown') + '\n\nCheck the API key in Settings.';
+    const r = await callGemini(key, prompt);
+    if(r.ok){
+      out.textContent = r.text;
     } else {
-      const txt = data.candidates && data.candidates[0] && data.candidates[0].content
-        && data.candidates[0].content.parts.map(p=>p.text||'').join('');
-      out.textContent = txt || 'No response — try again.';
+      out.textContent = 'Gemini error: ' + r.error + '\n\nIf it mentions quota, the free daily limit is used up — try again in a few hours. Otherwise re-test your key in Settings.';
     }
   }catch(e){
     out.textContent = 'Could not reach Gemini — check internet connection and try again.';
   }
   btn.disabled = false; btn.textContent = 'Analyze my day';
 };
+
+/* ---------------- Gemini call with model fallback ---------------- */
+const GEM_MODELS = ['gemini-2.5-flash','gemini-flash-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];
+async function callGemini(key, prompt){
+  const tryList = cfg.geminiModel ? [cfg.geminiModel, ...GEM_MODELS.filter(m=>m!==cfg.geminiModel)] : GEM_MODELS.slice();
+  let lastErr = 'unknown error';
+  for(const model of tryList){
+    try{
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+      });
+      const data = await res.json();
+      if(data.error){
+        lastErr = data.error.message || 'error';
+        continue; // quota-0 or missing model → try next
+      }
+      const txt = data.candidates && data.candidates[0] && data.candidates[0].content
+        && data.candidates[0].content.parts.map(p=>p.text||'').join('');
+      if(txt){
+        if(cfg.geminiModel !== model){ cfg.geminiModel = model; try{ await window.storage.set(CFGKEY, JSON.stringify(cfg)); }catch(e){} }
+        return {ok:true, text:txt, model};
+      }
+      lastErr = 'empty response';
+    }catch(e){
+      lastErr = 'network error';
+    }
+  }
+  return {ok:false, error:lastErr};
+}
 
 /* ---------------- Gemini key: save & test ---------------- */
 window.testKey = async ()=>{
@@ -769,21 +801,13 @@ window.testKey = async ()=>{
   cfg.geminiKey = key;
   try{ await window.storage.set(CFGKEY, JSON.stringify(cfg)); }catch(e){}
   if(!key){ st.textContent = 'Key cleared.'; return; }
-  st.textContent = 'Key saved ✓ — testing with Gemini…';
-  try{
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(key), {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ contents:[{ parts:[{ text:'Reply with exactly: OK' }] }] })
-    });
-    const data = await res.json();
-    if(data.error){
-      st.textContent = '✗ Key rejected: ' + (data.error.message||'invalid key') + '. Check for extra spaces, or generate a fresh key at aistudio.google.com.';
-    } else {
-      st.textContent = '✓ Key works! AI Coach is ready — go to Today tab and tap Analyze my day.';
-      document.getElementById('aiKeyHint').textContent = 'API key set ✓ — analysis ready';
-    }
-  }catch(e){
-    st.textContent = '✗ Could not reach Gemini — check internet and try again.';
+  st.textContent = 'Key saved ✓ — testing models…';
+  const r = await callGemini(key, 'Reply with exactly: OK');
+  if(r.ok){
+    st.textContent = '✓ Key works using model '+r.model+'! AI Coach is ready — go to Today tab and tap Analyze my day.';
+    document.getElementById('aiKeyHint').textContent = 'API key set ✓ — analysis ready';
+  } else {
+    st.textContent = '✗ All models rejected. Last error: '+r.error+' — if it mentions quota, the free limit for today may be used up; try again after some hours or tomorrow.';
   }
 };
 
@@ -817,6 +841,69 @@ window.doInstall = async ()=>{
     alert('Use Chrome menu (⋮ top-right) → "Add to Home screen" or "Install app".\n\nIf that option is missing:\n1. Confirm you are in the Chrome app itself\n2. Long-press Chrome icon → App info → Permissions → allow Home screen shortcuts (Vivo blocks this by default)\n3. Reload this page and try again');
   }
 };
+
+/* ---------------- backup & restore ---------------- */
+window.exportBackup = async ()=>{
+  try{
+    const dump = { app:'sadhana-180', version:1, exported: new Date().toISOString(), data:{} };
+    const ls = await window.storage.list('s180:');
+    if(ls && ls.keys){
+      for(const k of ls.keys){
+        if(k==='s180:lastBackup') continue;
+        try{
+          const r = await window.storage.get(k);
+          if(r && r.value !== undefined) dump.data[k] = r.value;
+        }catch(e){}
+      }
+    }
+    const blob = new Blob([JSON.stringify(dump, null, 1)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'sadhana-backup-' + today + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+    await window.storage.set('s180:lastBackup', today);
+    updateBackupStatus();
+  }catch(e){
+    alert('Export failed: ' + e.message);
+  }
+};
+document.getElementById('importFile').addEventListener('change', async (ev)=>{
+  const file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if(!file) return;
+  try{
+    const txt = await file.text();
+    const dump = JSON.parse(txt);
+    if(!dump || dump.app!=='sadhana-180' || !dump.data){ alert('This is not a Sadhana 180 backup file.'); return; }
+    const n = Object.keys(dump.data).length;
+    if(!confirm('Restore backup from '+(dump.exported||'unknown date').slice(0,10)+'?\n\n'+n+' records will be written. Existing entries for the same days will be overwritten. Newer un-backed-up days are kept.')) return;
+    for(const k of Object.keys(dump.data)){
+      await window.storage.set(k, dump.data[k]);
+    }
+    alert('✓ Backup restored ('+n+' records). Reloading…');
+    location.reload();
+  }catch(e){
+    alert('Import failed — file unreadable: ' + e.message);
+  }
+});
+async function updateBackupStatus(){
+  const st = document.getElementById('backupStatus');
+  if(!st) return;
+  try{
+    const r = await window.storage.get('s180:lastBackup');
+    if(r && r.value){
+      const n = daysSince(r.value);
+      st.textContent = n===0 ? '✓ Backed up today.' :
+        n<=15 ? '✓ Last backup '+n+' day'+(n>1?'s':'')+' ago.' :
+        '⚠ Last backup '+n+' days ago — export a fresh one now.';
+    } else {
+      st.textContent = '⚠ Never backed up — your data lives only on this phone. Export now.';
+    }
+  }catch(e){
+    st.textContent = 'Your data lives only on this phone — export a backup regularly.';
+  }
+}
 
 /* ---------------- analysis engine ---------------- */
 function loggedDays(){
@@ -1271,6 +1358,7 @@ window.showTab = t=>{
     document.getElementById('aiKeyHint').textContent = 'API key set ✓ — analysis ready';
   }
   updateInstallStatus();
+  updateBackupStatus();
   renderHeader(); renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderVitals(); renderJourney();
 })();
 </script>
