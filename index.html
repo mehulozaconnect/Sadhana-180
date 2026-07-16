@@ -825,6 +825,13 @@ function timeNow(){
 }
 const PROFILE_TXT = `Male, 42, 69kg, 5'5", pitta-dominant, strict satvik vegetarian (NO onion, NO garlic, no eggs/meat), mishri is his only accepted sweetener. Lives in Malad West, Mumbai. Diagnosed: constipation, acidity (APD), stomatitis (mouth ulcers, currently healing), sleeplessness, BP fluctuations (unmedicated), dyslipidemia, Vit D & B deficiency. On Ayurvedic treatment (Soothshekhar Ras, Aarogyavardhini, Gaisantak Vati, Aloe vera, Pet Safa). Rules: no deep-fried, no chocolate/maida/refined sugar, no very spicy/sour/fermented, tea only warm with 45-min meal gap and none after 4pm, 2750ml water/day, 30-min walk.`;
 
+function lastMealInfo(){
+  const foods = day.foods||[];
+  if(!foods.length) return 'MEAL TIMING: No meals logged today. Do NOT assume how recently he ate — do not use phrases like "so soon after your meal". If meal-gap matters to your answer, state that no meal is logged and remind him to log meals for better advice.';
+  const last = foods[foods.length-1];
+  return 'MEAL TIMING: Last logged food was "'+last.txt+'" at '+last.t+'. Base all meal-gap reasoning ONLY on this logged time vs the current time.';
+}
+
 /* ---------------- can I eat this? ---------------- */
 window.canIEat = async ()=>{
   const el = document.getElementById('askTxt');
@@ -843,6 +850,7 @@ window.canIEat = async ()=>{
 PROFILE: ${PROFILE_TXT}
 
 EATEN TODAY SO FAR: ${(day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ')||'nothing logged'}
+${lastMealInfo()}
 Water so far: ${day.water||0} ml. Mouth ulcer score: ${day.mouth||'not logged'} (1 painful – 5 healed).
 
 FOOD HISTORY LAST 7 DAYS (check for repeat indulgences — junk/fried/heavy items should NOT be allowed two days in a row, max 1-2 times per week):
@@ -891,6 +899,7 @@ window.suggestSnack = async ()=>{
 PROFILE: ${PROFILE_TXT}
 
 EATEN TODAY SO FAR: ${(day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ')||'nothing logged'}
+${lastMealInfo()}
 Water so far: ${day.water||0} ml. Mouth ulcer score: ${day.mouth||'not logged'}/5.
 Recent food history:
 ${foodHistory(3)}
