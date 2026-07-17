@@ -255,6 +255,11 @@
         </div>
       </div>
       <div class="hint" id="editHint" style="display:none;margin:8px 0 0">⏪ Backfilling a past day — everything you tick below saves to that date, and the mala bead updates.</div>
+      <div class="cfgrow" style="padding:8px 0 0;border-top:1px dashed var(--line);margin-top:8px">
+        <label style="font-size:13.5px;font-weight:600">🙏 Vrat / fasting day</label>
+        <button class="chk" id="vratChk" style="border-radius:8px"></button>
+      </div>
+      <div class="hint" id="vratHint" style="display:none;margin:6px 0 0">Vrat mode on: food rules auto-credited, AI advice switches to farali/fasting guidance, bead judged on doses + water + walk.</div>
     </div>
     <div class="card">
       <div class="todayScore">
@@ -266,10 +271,11 @@
           </svg>
           <div class="pct" id="ringPct">0%</div>
         </div>
-        <div>
+        <div style="flex:1">
           <div style="font-weight:700" id="scoreMsg">Begin today's sadhana</div>
           <div class="hint" style="margin:0" id="scoreSub">Tick each dose and rule as you go</div>
         </div>
+        <button class="btn small" style="flex:0 0 auto" onclick="shareDay()" title="Share today's summary">📤</button>
       </div>
     </div>
 
@@ -278,6 +284,7 @@
       <h2>Medicines</h2>
       <div class="hint">Dr. Arun Desai · follow-up after 15 days (~28 Jul)</div>
       <div id="medRows"></div>
+      <div class="hint" id="stockLine" style="margin:10px 0 0"></div>
       <div class="note">Soothshekhar = 30 min <b>before</b> lunch &amp; dinner. Aarogyavardhini &amp; Gaisantak = <b>after</b> food. Anchor doses to real meals, not snacks.</div>
     </div>
 
@@ -308,9 +315,12 @@
       <h2>What you ate</h2>
       <div class="hint">Log with quantities — e.g. "2 roti, 1 katori sabzi" — calories get estimated automatically</div>
       <div class="foodinput">
+        <button class="btn small" style="flex:0 0 auto;padding:9px 11px" onclick="startVoice('foodTxt')" title="Speak your meal">🎤</button>
         <input type="text" id="foodTxt" placeholder="e.g. 2 roti, 1 katori aloo sabzi">
+        <input type="time" id="foodTime" style="flex:0 0 108px;border:1.5px solid var(--line);border-radius:10px;padding:9px 6px;font:inherit;font-size:13px;background:var(--field);color:var(--pine)" title="When you ate it (leave empty = now)">
         <button class="btn small" onclick="addFood()">Add</button>
       </div>
+      <div class="hint" style="margin:6px 0 0">Ate earlier? Set the time, or write "at 9:30am" in the text. Tap any entry's time to correct it.</div>
       <div id="kcalTotal" class="hint" style="margin:10px 0 0"></div>
       <div id="foodList" style="margin-top:6px"></div>
     </div>
@@ -423,6 +433,7 @@
       <h2>Day notes</h2>
       <div class="hint">Anything — slips, symptoms, feelings, observations. Each entry is time-stamped.</div>
       <div class="foodinput">
+        <button class="btn small" style="flex:0 0 auto;padding:9px 11px" onclick="startVoice('noteTxt')" title="Speak a note">🎤</button>
         <input type="text" id="noteTxt" placeholder="e.g. slight burning after lunch">
         <button class="btn small" onclick="addNote()">Log</button>
       </div>
@@ -465,6 +476,14 @@
       </div>
       <div class="grade" id="gradeBox"></div>
       <div id="weekRows" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <span class="tag" style="background:#EAE4F5;color:#5B4B8A">AI Coach · Gemini</span>
+      <h2>Weekly review</h2>
+      <div class="hint">Gemini reads your whole week and finds patterns the numbers can't show — what improved, what slipped, hidden correlations, next week's focus</div>
+      <button class="btn ai" id="wkBtn" onclick="aiWeekly()">🧠 Review my week</button>
+      <div class="aibox" id="wkOut"></div>
     </div>
 
     <div class="card">
@@ -523,12 +542,26 @@
         <div class="hint" style="margin:8px 0 0" id="keyStatus">Get a free key at aistudio.google.com → Get API key. Stored only on this phone.</div>
       </div>
       <div style="padding:8px 0;border-top:1px dashed var(--line)">
+        <label style="font-size:13.5px;font-weight:600">Edit medicines</label>
+        <div class="hint" style="margin:4px 0 8px">Update this after your 28 Jul follow-up — changes apply immediately to the Today checklist.</div>
+        <div id="medEditor"></div>
+        <div class="foodinput" style="margin-top:8px">
+          <input type="text" id="newMedName" placeholder="Medicine + dose (e.g. Tab X — 1 tab)">
+        </div>
+        <div class="foodinput" style="margin-top:6px">
+          <input type="text" id="newMedWhen" placeholder="When (e.g. After lunch)">
+          <button class="btn small" onclick="addMed()">Add</button>
+        </div>
+      </div>
+      <div style="padding:8px 0;border-top:1px dashed var(--line)">
         <label style="font-size:13.5px;font-weight:600">Backup &amp; restore</label>
         <div class="hint" style="margin:4px 0 8px" id="backupStatus">Your data lives only on this phone — export a backup regularly.</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn small" onclick="exportBackup()">Export backup</button>
+          <button class="btn small" onclick="exportBackup()">Backup (restore file)</button>
           <button class="btn small" style="background:var(--jade)" onclick="document.getElementById('importFile').click()">Import backup</button>
+          <button class="btn small" style="background:#1D6F42" onclick="exportExcel()">📊 Export Excel</button>
         </div>
+        <div class="hint" style="margin:6px 0 0">Backup file (JSON) = for restoring the app. Excel = readable log for you or your doctor.</div>
         <input type="file" id="importFile" accept=".json,application/json" style="display:none">
       </div>
       <div style="padding:8px 0;border-top:1px dashed var(--line)">
@@ -570,7 +603,7 @@ if('serviceWorker' in navigator){
 }
 
 /* ---------------- config & state ---------------- */
-const MEDS = [
+const DEFAULT_MEDS = [
   {id:'aloe_am',  name:'Aloe Vera Juice 30ml', when:'Empty stomach, ~8 am + 1 glass water'},
   {id:'sooth_am', name:'Soothshekhar Ras — 2 tabs', when:'30 min before lunch'},
   {id:'aar_am',   name:'Aarogyavardhini — 1 tab', when:'After lunch'},
@@ -582,6 +615,7 @@ const MEDS = [
   {id:'aloe_pm',  name:'Aloe Vera Juice 30ml', when:'Evening, empty stomach'},
   {id:'petsafa',  name:'Pet Safa — ¾ tsp', when:'Night after food, lukewarm milk'}
 ];
+let MEDS = DEFAULT_MEDS.slice();
 const FOOD = [
   {id:'nofry',   name:'No deep-fried food', when:'Vada, bhajiya, puri, chips…'},
   {id:'nochoc',  name:'No chocolate / maida / refined-sugar sweets', when:'Mishri is fine'},
@@ -636,7 +670,7 @@ function daysSince(dateStr){
   return Math.floor((new Date(realToday+'T12:00:00') - new Date(dateStr+'T12:00:00'))/86400000);
 }
 const WATER_TARGET = 2750;
-function blankDay(){ return { meds:{}, food:{}, mouth:0, sleep:0, bowel:false, walk:false, water:0, foods:[], noteLog:[], steps:null, hr:null, notes:'' }; }
+function blankDay(){ return { meds:{}, food:{}, vrat:false, mouth:0, sleep:0, bowel:false, walk:false, water:0, foods:[], noteLog:[], steps:null, hr:null, notes:'' }; }
 function dayIndex(dateStr){
   const ms = new Date(dateStr+'T12:00:00') - new Date(cfg.start+'T12:00:00');
   return Math.floor(ms/86400000) + 1;
@@ -645,18 +679,18 @@ function dateOfIndex(idx){
   const d = new Date(cfg.start+'T12:00:00'); d.setDate(d.getDate()+idx-1);
   return localISO(d);
 }
-function isClean(d){ return d && d.food && FOOD.every(f=>d.food[f.id]); }
+function isClean(d){ return d && (d.vrat || (d.food && FOOD.every(f=>d.food[f.id]))); }
 function dayScore(d){
   if(!d) return {pct:0, full:false, any:false};
   const medIds = MEDS.map(m=>m.id), foodIds = FOOD.map(f=>f.id);
   const medDone = medIds.filter(i=>d.meds && d.meds[i]).length;
   const foodDone = foodIds.filter(i=>d.food && d.food[i]).length;
   const medPart = cfg.showMeds ? medDone/medIds.length : 1;
-  const foodPart = foodDone/foodIds.length;
+  const foodPart = d.vrat ? 1 : foodDone/foodIds.length;
   const waterPart = Math.min(1, (d.water||0)/WATER_TARGET);
   const logPart = (d.mouth>0?0.4:0) + (d.sleep>0?0.3:0) + (d.bowel?0.3:0);
   const pct = Math.round((medPart*0.35 + foodPart*0.30 + (d.walk?0.08:0) + waterPart*0.12 + logPart*0.15)*100);
-  const full = (cfg.showMeds ? medDone===medIds.length : true) && foodDone===foodIds.length && !!d.walk && (d.water||0)>=WATER_TARGET;
+  const full = (cfg.showMeds ? medDone===medIds.length : true) && (d.vrat || foodDone===foodIds.length) && !!d.walk && (d.water||0)>=WATER_TARGET;
   const any = medDone>0 || foodDone>0 || d.mouth>0 || d.sleep>0 || d.bowel || d.walk || (d.water||0)>0 || (d.foods||[]).length>0 || (d.noteLog||[]).length>0 || (d.notes||'').length>0;
   return {pct, full, any};
 }
@@ -667,6 +701,7 @@ async function loadAll(){
     const c = await window.storage.get(CFGKEY);
     if(c && c.value) cfg = Object.assign(cfg, JSON.parse(c.value));
   }catch(e){}
+  if(cfg.meds && cfg.meds.length) MEDS = cfg.meds;
   try{
     const v = await window.storage.get(VITKEY);
     if(v && v.value) vitals = Object.assign(vitals, JSON.parse(v.value));
@@ -738,6 +773,15 @@ function dueBadge(el, last, okDays, soonDays, unitTxt){
   else if(n <= soonDays){ el.className='due soon'; el.textContent='due — '+n+'d ago'; }
   else { el.className='due over'; el.textContent='overdue — '+n+'d ago'; }
 }
+window.undoVital = (kind)=>{
+  const arr = vitals[kind];
+  if(!arr || !arr.length){ alert('Nothing to remove.'); return; }
+  const last = arr[arr.length-1];
+  const label = kind==='bp' ? last.sys+'/'+last.dia : kind==='sugar' ? 'fasting '+last.fbs : last.kg+' kg';
+  if(confirm('Remove last entry: '+label+' ('+fmt(last.d)+')?')){
+    arr.pop(); renderVitals(); save();
+  }
+};
 function renderVitals(){
   const lastBp = vitals.bp[vitals.bp.length-1];
   const lastSg = vitals.sugar[vitals.sugar.length-1];
@@ -745,12 +789,12 @@ function renderVitals(){
   dueBadge(document.getElementById('bpDue'), lastBp, 3, 5);
   dueBadge(document.getElementById('sgDue'), lastSg, 20, 30);
   dueBadge(document.getElementById('wtDue'), lastWt, 30, 40);
-  if(lastBp) document.getElementById('bpLast').textContent =
-    'Last: '+lastBp.sys+'/'+lastBp.dia+' on '+fmt(lastBp.d)+' · '+vitals.bp.length+' readings logged';
-  if(lastSg) document.getElementById('sgLast').textContent =
-    'Last: fasting '+lastSg.fbs+(lastSg.pp?' · PP '+lastSg.pp:'')+' on '+fmt(lastSg.d)+' · next due ~'+fmt(dateOfIndex(dayIndex(lastSg.d)+25));
-  if(lastWt) document.getElementById('wtLast').textContent =
-    'Last: '+lastWt.kg+' kg on '+fmt(lastWt.d);
+  if(lastBp) document.getElementById('bpLast').innerHTML =
+    'Last: '+lastBp.sys+'/'+lastBp.dia+' on '+fmt(lastBp.d)+' · '+vitals.bp.length+' readings · <a href="javascript:undoVital(\'bp\')" style="color:var(--danger)">undo</a>';
+  if(lastSg) document.getElementById('sgLast').innerHTML =
+    'Last: fasting '+lastSg.fbs+(lastSg.pp?' · PP '+lastSg.pp:'')+' on '+fmt(lastSg.d)+' · next due ~'+fmt(dateOfIndex(dayIndex(lastSg.d)+25))+' · <a href="javascript:undoVital(\'sugar\')" style="color:var(--danger)">undo</a>';
+  if(lastWt) document.getElementById('wtLast').innerHTML =
+    'Last: '+lastWt.kg+' kg on '+fmt(lastWt.d)+' · <a href="javascript:undoVital(\'wt\')" style="color:var(--danger)">undo</a>';
 }
 
 /* ---------------- water & food log & health inputs ---------------- */
@@ -766,16 +810,49 @@ function renderWater(){
   document.getElementById('waterHint').textContent =
     left>0 ? left+' ml to go — about '+Math.ceil(left/250)+' glasses' : 'Target met 💧 ('+w+' ml)';
 }
+function fmtHM(h24, m){
+  const h = h24%12||12;
+  return h+':'+String(m).padStart(2,'0')+(h24>=12?'pm':'am');
+}
+function parseTimeFromText(text){
+  // matches "at 9:30am", "9.30 pm", "@9am"
+  const m = text.match(/(?:@|at\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)/i);
+  if(!m) return null;
+  let h = parseInt(m[1],10);
+  const mins = m[2] ? parseInt(m[2],10) : 0;
+  if(h>12 || mins>59) return null;
+  const ap = m[3].toLowerCase();
+  let h24 = h%12 + (ap==='pm'?12:0);
+  return fmtHM(h24, mins);
+}
 window.addFood = ()=>{
   const el = document.getElementById('foodTxt');
+  const tEl = document.getElementById('foodTime');
   const t = el.value.trim();
   if(!t) return;
+  let stamp = nowStamp();
+  if(tEl.value){
+    const [h,m] = tEl.value.split(':').map(Number);
+    stamp = fmtHM(h,m);
+  } else {
+    const parsed = parseTimeFromText(t);
+    if(parsed) stamp = parsed;
+  }
   day.foods = day.foods||[];
-  const entry = {t: nowStamp(), txt: t, kcal: null};
+  const entry = {t: stamp, txt: t, kcal: null};
   day.foods.push(entry);
-  el.value='';
+  el.value=''; tEl.value='';
   cache[today]=day; renderFoodLog(); renderScore(); save();
   estimateKcal(entry);
+};
+window.editFoodTime = (i)=>{
+  const cur = day.foods[i].t;
+  const v = prompt('Correct time for this entry (e.g. 9:30am):', cur);
+  if(!v) return;
+  const parsed = parseTimeFromText(v) || parseTimeFromText(v+'m');
+  if(!parsed){ alert('Could not read that time — use format like 9:30am or 7pm'); return; }
+  day.foods[i].t = parsed;
+  cache[today]=day; renderFoodLog(); save();
 };
 async function estimateKcal(entry){
   const key = (cfg.geminiKey||'').trim();
@@ -800,7 +877,7 @@ function renderFoodLog(){
   const foods = day.foods||[];
   if(!foods.length){ fl.innerHTML = '<div class="hint" style="margin:0">Nothing logged yet today</div>'; kt.textContent=''; return; }
   fl.innerHTML = foods.map((f,i)=>
-    `<div class="fooditem"><span class="ft">${f.t}</span><span class="fx">${f.txt.replace(/</g,'&lt;')}${f.kcal?' <b style="color:var(--sand);font-size:11.5px">~'+f.kcal+' kcal</b>':''}</span>
+    `<div class="fooditem"><span class="ft" style="text-decoration:underline dotted;cursor:pointer" onclick="editFoodTime(${i})">${f.t}</span><span class="fx">${f.txt.replace(/</g,'&lt;')}${f.kcal?' <b style="color:var(--sand);font-size:11.5px">~'+f.kcal+' kcal</b>':''}</span>
      <button onclick="delFood(${i})">×</button></div>`).join('');
   const tot = foods.reduce((s,f)=>s+(f.kcal||0),0);
   const pending = foods.filter(f=>f.kcal==null).length;
@@ -832,7 +909,7 @@ window.askAI = async ()=>{
 
 CURRENT TIME: ${timeNow()}. IMPORTANT: this may be a mid-day check. Doses/rules whose natural time has NOT yet passed (e.g. dinner doses, night Pet Safa, evening water) are PENDING, not missed — do not penalize them. Judge water as pace-for-the-time-of-day, not final total. Comment ONLY on what is actually logged below — do not invent foods, teas, or events that are not listed.
 
-PROFILE: ${PROFILE_TXT} Day ${dayIndex(today)} of the treatment course.
+PROFILE: ${PROFILE_TXT}\n${day.vrat?'IMPORTANT: TODAY IS A VRAT (RELIGIOUS FASTING) DAY. All advice must fit satvik fasting — farali foods only (fruits, milk, dry fruits, sabudana in moderation for his pitta, rajgira, singhada). Do NOT penalize skipped regular meals or reduced calories.':''} Day ${dayIndex(today)} of the treatment course.
 
 TODAY'S LOG:
 Food eaten: ${foods}
@@ -880,6 +957,144 @@ window.toggleTheme = ()=>{
   applyTheme(); save();
 };
 
+/* ---------------- share day ---------------- */
+window.shareDay = ()=>{
+  const s = dayScore(day);
+  const medN = MEDS.filter(m=>day.meds&&day.meds[m.id]).length;
+  const kcal = (day.foods||[]).reduce((sm,f)=>sm+(f.kcal||0),0);
+  const txt = '🪷 Sadhana 180 — Day '+dayIndex(today)+(day.vrat?' (Vrat)':'')+'\n'+
+    'Score: '+s.pct+'%'+(s.full?' ✅ full discipline':'')+'\n'+
+    'Doses: '+medN+'/'+MEDS.length+' · Water: '+(day.water||0)+'ml · Walk: '+(day.walk?'✅':'—')+'\n'+
+    (day.mouth?'Mouth: '+day.mouth+'/5 · ':'')+(day.steps?'Steps: '+day.steps+' · ':'')+(kcal?'~'+kcal+' kcal':'')+'\n'+
+    ((day.foods||[]).length? 'Ate: '+(day.foods||[]).map(f=>f.txt).join(', ') : '');
+  if(navigator.share){
+    navigator.share({text: txt}).catch(()=>{});
+  } else {
+    window.open('https://wa.me/?text='+encodeURIComponent(txt));
+  }
+};
+
+/* ---------------- AI weekly review ---------------- */
+function dayLineFor(idx){
+  const key = dateOfIndex(idx);
+  const d = cache[key];
+  if(!d || !dayScore(d).any) return fmt(key)+': not logged';
+  const medN = MEDS.filter(m=>d.meds&&d.meds[m.id]).length;
+  const ruleN = FOOD.filter(f=>d.food&&d.food[f.id]).length;
+  const kcal = (d.foods||[]).reduce((s,f)=>s+(f.kcal||0),0);
+  return fmt(key)+(d.vrat?' [VRAT]':'')+': doses '+medN+'/'+MEDS.length+', rules '+ruleN+'/'+FOOD.length+
+    ', water '+(d.water||0)+'ml, walk '+(d.walk?'Y':'N')+
+    (d.steps?', steps '+d.steps:'')+(d.hr?', rHR '+d.hr:'')+
+    ', mouth '+(d.mouth||'-')+', sleep '+(d.sleep||'-')+', bowel '+(d.bowel?'Y':'N')+
+    (kcal?', ~'+kcal+'kcal':'')+
+    ((d.foods||[]).length?', ate: '+(d.foods||[]).map(f=>f.txt).join('; '):'')+
+    ((d.noteLog||[]).length?', notes: '+(d.noteLog||[]).map(n=>n.txt).join('; '):'');
+}
+window.aiWeekly = async ()=>{
+  const out = document.getElementById('wkOut');
+  const btn = document.getElementById('wkBtn');
+  const key = (cfg.geminiKey||'').trim();
+  if(!key){ out.className='aibox show'; out.textContent='Set your Gemini API key in Settings first.'; return; }
+  btn.disabled=true; btn.textContent='Reading your week…';
+  out.className='aibox show'; out.textContent='Analyzing 7 days of data…';
+  const endIdx = dayIndex(realToday);
+  const lines = [];
+  for(let i=Math.max(1,endIdx-6); i<=endIdx; i++) lines.push(dayLineFor(i));
+  const prompt =
+`You are an Ayurvedic + lifestyle coach writing a weekly review. PROFILE: ${'$'}{PROFILE_TXT}
+
+HIS LAST 7 DAYS (day ${'$'}{Math.max(1,endIdx-6)} to ${'$'}{endIdx} of the 180-day plan):
+${'$'}{lines.join('\n')}
+
+Write under 220 words, plain text, no markdown, warm but honest, in these sections:
+WEEK IN ONE LINE: overall verdict.
+WHAT IMPROVED: concrete wins from the data.
+WHAT SLIPPED: concrete misses, no sugarcoating.
+HIDDEN PATTERN: find one genuine correlation across days (e.g. sleep vs water, mouth vs specific foods, walks vs bowel). Only claim it if the data above actually shows it; otherwise say what to log to reveal patterns.
+NEXT WEEK'S ONE FOCUS: the single change with the biggest payoff.`;
+  const r = await callGemini(key, prompt);
+  out.textContent = r.ok ? r.text : 'Gemini error: '+r.error;
+  btn.disabled=false; btn.textContent='🧠 Review my week';
+};
+
+/* ---------------- medicine editor ---------------- */
+function renderStock(){
+  const el = document.getElementById('stockLine');
+  if(!el) return;
+  // only meaningful while the original prescription ids are in use
+  const ids = MEDS.map(m=>m.id);
+  if(!(ids.includes('sooth_am') && ids.includes('aar_am') && ids.includes('gai_am'))){ el.textContent=''; return; }
+  // tabs per tick: sooth doses = 2 tabs each, aar 1, gai 1
+  const stockDef = [
+    {name:'Soothshekhar', total:60, perTick:{sooth_am:2, sooth_pm:2}, daily:4},
+    {name:'Aarogyavardhini', total:30, perTick:{aar_am:1, aar_pm:1}, daily:2},
+    {name:'Gaisantak', total:45, perTick:{gai_am:1, gai_noon:1, gai_pm:1}, daily:3}
+  ];
+  const days = Object.keys(cache).filter(k=>k<=realToday);
+  const parts = [];
+  let anyLow = false;
+  stockDef.forEach(s=>{
+    let used = 0;
+    days.forEach(k=>{
+      const d = cache[k];
+      if(!d || !d.meds) return;
+      Object.keys(s.perTick).forEach(id=>{ if(d.meds[id]) used += s.perTick[id]; });
+    });
+    const left = Math.max(0, s.total - used);
+    const daysLeft = Math.floor(left / s.daily);
+    if(daysLeft <= 3) anyLow = true;
+    parts.push(s.name+': ~'+left+' tabs ('+daysLeft+'d)');
+  });
+  const fu = Math.round((new Date('2026-07-28T12:00:00') - new Date(realToday+'T12:00:00'))/86400000);
+  const fuTxt = fu>0 ? ' · 🗓 Follow-up in '+fu+' day'+(fu>1?'s':'')+' (28 Jul)' : fu===0 ? ' · 🗓 Follow-up TODAY' : '';
+  el.innerHTML = (anyLow?'⚠ ':'💊 ')+'Stock: '+parts.join(' · ')+fuTxt;
+  el.style.color = anyLow ? 'var(--danger)' : '';
+}
+function renderMedEditor(){
+  const el = document.getElementById('medEditor');
+  if(!el) return;
+  el.innerHTML = MEDS.map((m,i)=>
+    `<div class="fooditem"><span class="fx"><b>${m.name}</b><br><span style="color:var(--muted);font-size:12px">${m.when}</span></span>
+     <button onclick="delMed(${i})">×</button></div>`).join('') || '<div class="hint" style="margin:0">No medicines — add below</div>';
+}
+window.delMed = (i)=>{
+  if(!confirm('Remove "'+MEDS[i].name+'" from the daily checklist?')) return;
+  MEDS.splice(i,1);
+  cfg.meds = MEDS; save();
+  renderMedEditor(); renderRows(); renderScore();
+};
+window.addMed = ()=>{
+  const n = document.getElementById('newMedName').value.trim();
+  const w = document.getElementById('newMedWhen').value.trim();
+  if(!n){ alert('Type the medicine name first.'); return; }
+  MEDS.push({id:'cm'+Date.now(), name:n, when:w||'As advised'});
+  cfg.meds = MEDS; save();
+  document.getElementById('newMedName').value=''; document.getElementById('newMedWhen').value='';
+  renderMedEditor(); renderRows(); renderScore();
+};
+
+/* ---------------- voice input ---------------- */
+let recActive = false;
+window.startVoice = (targetId)=>{
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ alert('Voice input is not supported in this browser — please type instead.'); return; }
+  if(recActive) return;
+  const rec = new SR();
+  rec.lang = 'en-IN';
+  rec.interimResults = false;
+  const el = document.getElementById(targetId);
+  const oldPh = el.placeholder;
+  el.placeholder = '🎤 Listening… speak now';
+  recActive = true;
+  rec.onresult = (e)=>{
+    const said = e.results[0][0].transcript;
+    el.value = (el.value ? el.value+' ' : '') + said;
+  };
+  rec.onend = ()=>{ el.placeholder = oldPh; recActive = false; };
+  rec.onerror = ()=>{ el.placeholder = oldPh; recActive = false; };
+  try{ rec.start(); }catch(e){ recActive=false; el.placeholder=oldPh; }
+};
+
 /* ---------------- note log ---------------- */
 function nowStamp(){
   const now = new Date();
@@ -891,7 +1106,7 @@ window.addNote = ()=>{
   const t = el.value.trim();
   if(!t) return;
   day.noteLog = day.noteLog||[];
-  day.noteLog.push({t: nowStamp(), txt: t});
+  day.noteLog.push({t: parseTimeFromText(t) || nowStamp(), txt: t});
   el.value='';
   cache[today]=day; renderNotes(); save();
 };
@@ -949,7 +1164,7 @@ window.canIEat = async ()=>{
   const prompt =
 `You are a strict but kind Ayurvedic diet gatekeeper. Current time: ${timeNow()}, day ${dayIndex(today)} of a 180-day discipline plan.
 
-PROFILE: ${PROFILE_TXT}
+PROFILE: ${PROFILE_TXT}\n${day.vrat?'IMPORTANT: TODAY IS A VRAT (RELIGIOUS FASTING) DAY. All advice must fit satvik fasting — farali foods only (fruits, milk, dry fruits, sabudana in moderation for his pitta, rajgira, singhada). Do NOT penalize skipped regular meals or reduced calories.':''}
 
 EATEN TODAY SO FAR: ${(day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ')||'nothing logged'}
 ${lastMealInfo()}
@@ -1000,7 +1215,7 @@ window.suggestSnack = async ()=>{
   const prompt =
 `You are an Ayurvedic diet coach. Current time: ${timeNow()}, Mumbai, day ${dayIndex(today)} of a 180-day plan.
 
-PROFILE: ${PROFILE_TXT}
+PROFILE: ${PROFILE_TXT}\n${day.vrat?'IMPORTANT: TODAY IS A VRAT (RELIGIOUS FASTING) DAY. All advice must fit satvik fasting — farali foods only (fruits, milk, dry fruits, sabudana in moderation for his pitta, rajgira, singhada). Do NOT penalize skipped regular meals or reduced calories.':''}
 
 EATEN TODAY SO FAR: ${(day.foods||[]).map(f=>f.t+' — '+f.txt).join('; ')||'nothing logged'}
 ${lastMealInfo()}
@@ -1160,6 +1375,50 @@ async function updateBackupStatus(){
     st.textContent = 'Your data lives only on this phone — export a backup regularly.';
   }
 }
+
+/* ---------------- Excel export ---------------- */
+function loadSheetJS(){
+  return new Promise((res, rej)=>{
+    if(window.XLSX) return res();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = ()=>res();
+    s.onerror = ()=>rej(new Error('needs internet to load the Excel engine'));
+    document.head.appendChild(s);
+  });
+}
+window.exportExcel = async ()=>{
+  try{
+    await loadSheetJS();
+    const wb = XLSX.utils.book_new();
+    // Sheet 1: daily log
+    const rows = [['Date','Day #','Doses taken (of '+MEDS.length+')','Food rules kept (of '+FOOD.length+')','Clean day','Water (ml)','Walk','Steps','Resting HR','Mouth (1-5)','Sleep (1-5)','Bowel cleared','Calories (~kcal)','Foods eaten','Notes']];
+    const endIdx = dayIndex(realToday);
+    for(let i=1;i<=endIdx;i++){
+      const key = dateOfIndex(i);
+      const d = cache[key];
+      if(!d || !dayScore(d).any){ rows.push([key,i,'','','','','','','','','','','','(not logged)','']); continue; }
+      const medN = MEDS.filter(m=>d.meds&&d.meds[m.id]).length;
+      const ruleN = FOOD.filter(f=>d.food&&d.food[f.id]).length;
+      const kcal = (d.foods||[]).reduce((s,f)=>s+(f.kcal||0),0);
+      rows.push([key, i, medN, ruleN, isClean(d)?'YES':'no', d.water||0, d.walk?'YES':'no',
+        d.steps||'', d.hr||'', d.mouth||'', d.sleep||'', d.bowel?'YES':'no', kcal||'',
+        (d.foods||[]).map(f=>f.t+' '+f.txt+(f.kcal?' (~'+f.kcal+'kcal)':'')).join(' | '),
+        (d.noteLog||[]).map(n=>n.t+' '+n.txt).join(' | ')]);
+    }
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Daily Log');
+    // Sheet 2-4: vitals
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
+      [['Date','Systolic','Diastolic'], ...vitals.bp.map(r=>[r.d,r.sys,r.dia])]), 'BP');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
+      [['Date','Fasting (mg/dL)','PP (mg/dL)'], ...vitals.sugar.map(r=>[r.d,r.fbs,r.pp||''])]), 'Sugar');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
+      [['Date','Weight (kg)'], ...vitals.wt.map(r=>[r.d,r.kg])]), 'Weight');
+    XLSX.writeFile(wb, 'Sadhana-180-log-'+realToday+'.xlsx');
+  }catch(e){
+    alert('Excel export failed: '+e.message);
+  }
+};
 
 /* ---------------- analysis engine ---------------- */
 function loggedDays(){
@@ -1334,6 +1593,7 @@ function renderRows(){
        <button class="chk ${on?'on':''}" onclick="tog('food','${f.id}')"></button></div>`);
   });
   document.getElementById('medCard').style.display = cfg.showMeds ? '' : 'none';
+  renderStock();
 }
 function renderScales(){
   const ms = document.getElementById('mouthScale'); ms.innerHTML='';
@@ -1346,6 +1606,9 @@ function renderScales(){
   }
   document.getElementById('bowelChk').classList.toggle('on', !!day.bowel);
   document.getElementById('walkChk').classList.toggle('on', !!day.walk);
+  const vc = document.getElementById('vratChk');
+  if(vc){ vc.classList.toggle('on', !!day.vrat);
+    document.getElementById('vratHint').style.display = day.vrat?'block':'none'; }
 }
 function renderScore(){
   const s = dayScore(day);
@@ -1598,6 +1861,9 @@ document.getElementById('bowelChk').addEventListener('click',()=>{
 document.getElementById('walkChk').addEventListener('click',()=>{
   day.walk=!day.walk; cache[today]=day; renderScales(); renderScore(); save();
 });
+document.getElementById('vratChk').addEventListener('click',()=>{
+  day.vrat=!day.vrat; cache[today]=day; renderScales(); renderScore(); save();
+});
 window.logHealth = ()=>{
   const s = +document.getElementById('stepsIn').value || null;
   const h = +document.getElementById('hrIn').value || null;
@@ -1631,7 +1897,7 @@ window.symptomHelp = async ()=>{
   const prompt =
 `You are an Ayurvedic + lifestyle coach doing symptom triage. Current time: ${timeNow()}, day ${dayIndex(today)} of the plan.
 
-PROFILE: ${PROFILE_TXT}
+PROFILE: ${PROFILE_TXT}\n${day.vrat?'IMPORTANT: TODAY IS A VRAT (RELIGIOUS FASTING) DAY. All advice must fit satvik fasting — farali foods only (fruits, milk, dry fruits, sabudana in moderation for his pitta, rajgira, singhada). Do NOT penalize skipped regular meals or reduced calories.':''}
 
 HE SAYS RIGHT NOW: "${sym}"
 
@@ -1705,7 +1971,7 @@ window.showTab = t=>{
   const ed = document.getElementById('editDate');
   ed.value = today; ed.max = realToday; ed.min = cfg.start;
   ed.addEventListener('change', e=>{ if(e.target.value) setEditDate(e.target.value); });
-  renderHeader(); renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderNotes(); renderVitals(); renderJourney();
+  renderHeader(); renderRows(); renderScales(); renderScore(); renderWater(); renderFoodLog(); renderNotes(); renderVitals(); renderMedEditor(); renderJourney();
 })();
 </script>
 </body>
