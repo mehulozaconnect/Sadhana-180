@@ -1508,7 +1508,57 @@ window.exportExcel = async ()=>{
         (d.foods||[]).map(f=>f.t+' '+f.txt+(f.kcal?' (~'+f.kcal+'kcal)':'')).join(' | '),
         (d.noteLog||[]).map(n=>n.t+' '+n.txt).join(' | ')]);
     }
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Daily Log');
+    const ws1 = XLSX.utils.aoa_to_sheet(rows);
+    ws1['!cols'] = [{wch:11},{wch:6},{wch:10},{wch:10},{wch:9},{wch:10},{wch:6},{wch:8},{wch:10},{wch:9},{wch:9},{wch:8},{wch:10},{wch:60},{wch:40}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Daily Log');
+
+    // ---- Insights sheet: full computed analysis with verdicts ----
+    const a = analysis();
+    const V = (cond, good, mid, bad) => cond==='pos'?good:cond==='mid'?mid:bad;
+    const ins = [['SADHANA 180 — INSIGHTS','','as of '+realToday+' (day '+a.idxToday+' of 180)'],
+      [],
+      ['METRIC','VALUE','READING']];
+    ins.push(['Days tracked', a.nDays, a.nDays>=a.idxToday*0.8?'consistent logging':'gaps in logging — backfill missing days']);
+    ins.push(['Medicine adherence', a.medPct+'%', a.medPct>=90?'excellent':a.medPct>=70?'fair — tighten before follow-up':'poor — discuss barriers with doctor']);
+    if(a.nMouth>=2){
+      ins.push(['Mouth score: start → now', a.first+' → '+a.latest+' (of 5)', a.latest>a.first?'healing':a.latest<a.first?'worsening — flag to doctor':'unchanged']);
+      if(a.slope!=null) ins.push(['Mouth trend', (a.slope>=0?'+':'')+a.slope.toFixed(2)+' per day', a.slope>0.03?'improving':a.slope<-0.03?'REGRESSING':'plateau'+(a.idxToday>=10?' — raise at follow-up':'')]);
+      if(a.healDate && a.traj!=='healed') ins.push(['Projected fully healed', fmt(a.healDate)+' (day '+a.healIdx+')', a.healIdx<=17?'within expected window':'slower than ideal — tighten food rules']);
+      if(a.traj==='healed') ins.push(['Mouth status','HEALED (5/5)','maintain discipline to prevent recurrence']);
+    } else ins.push(['Mouth trend','insufficient data','log mouth score daily']);
+    if(a.cleanAvg!=null && a.slipAvg!=null){
+      ins.push(['Mouth day-after CLEAN food days', a.cleanAvg.toFixed(1)+'/5 ('+a.cleanN+' days)','']);
+      ins.push(['Mouth day-after SLIP days', a.slipAvg.toFixed(1)+'/5 ('+a.slipN+' days)', (a.cleanAvg-a.slipAvg)>0.3?'slips measurably slow healing':'no significant food effect yet']);
+    }
+    if(a.worstRule && a.worstRule.n>0) ins.push(['Most-broken food rule', RULE_SHORT[a.worstRule.id]+' ('+a.worstRule.n+' days)','primary fix target']);
+    ins.push(['Bowel cleared', a.bowelPct+'% of days', a.bowelPct>=80?'good elimination':a.bowelPct>=50?'inconsistent':'poor — mention to doctor']);
+    if(a.sleepAvg) ins.push(['Sleep quality avg', a.sleepAvg+'/5', a.sleepAvg>=3.5?'good':'poor — check tea timing & screens']);
+    ins.push(['Water avg', a.waterAvg+' ml/day (target 2750)', a.waterAvg>=2500?'on target':a.waterAvg>=1800?'below target':'well below — biggest easy win']);
+    ins.push(['Water target hit', a.waterHit+' of '+a.nDays+' days','']);
+    ins.push(['Walks', a.walkDays+' of '+a.nDays+' days', a.walkDays>=a.nDays*0.7?'good':'increase — touches BP, lipids, sleep, bowel']);
+    if(a.calAvg) ins.push(['Calories avg', '~'+a.calAvg+' kcal/day', (a.calAvg>=1500&&a.calAvg<=2100)?'healthy range':a.calAvg>2400?'high — trims needed for lipids/BMI':'monitor']);
+    if(a.stepsAvg) ins.push(['Steps avg', a.stepsAvg+'/day'+(a.stepsTrend!=null?' ('+(a.stepsTrend>=0?'+':'')+a.stepsTrend+'/day trend)':''), a.stepsAvg>=8000?'good':'below 8k target']);
+    if(a.hrAvg) ins.push(['Resting HR avg', a.hrAvg+' bpm'+(a.hrTrend!=null?' ('+(a.hrTrend>=0?'+':'')+a.hrTrend+' trend)':''), a.hrAvg<=72?'healthy':a.hrAvg<=80?'okay':'elevated — walks & sleep']);
+    if(a.bpN) ins.push(['Home BP avg (last '+Math.min(a.bpN,5)+')', a.bpSys+'/'+a.bpDia+' mmHg'+(a.bpTrend!=null?' ('+(a.bpTrend>=0?'+':'')+Math.round(a.bpTrend)+' sys trend)':''), a.bpFlag==='ok'?'normal':a.bpFlag==='borderline'?'borderline — keep monitoring':'HIGH — see a physician']);
+    else ins.push(['Home BP','no readings','start 2-3 readings/week']);
+    if(a.sgLast) ins.push(['Fasting sugar (last)', a.sgLast.fbs+' mg/dL ('+fmt(a.sgLast.d)+')'+(a.sgDelta!=null?', '+(a.sgDelta>0?'+':'')+a.sgDelta+' vs prev':''), a.sgFlag==='ok'?'normal':a.sgFlag==='borderline'?'prediabetic range — diet matters':'diabetic range — see physician']);
+    else ins.push(['Fasting sugar','no baseline yet','get a fasting test']);
+    if(a.wtLast) ins.push(['Weight', a.wtLast+' kg · BMI '+a.bmi+(a.wtDelta!=null?' ('+(a.wtDelta>0?'+':'')+a.wtDelta.toFixed(1)+' kg since start)':''), a.bmi<25?'healthy BMI':'above 25 — walking + calorie trend are the levers']);
+    const wsI = XLSX.utils.aoa_to_sheet(ins);
+    wsI['!cols'] = [{wch:34},{wch:34},{wch:52}];
+    XLSX.utils.book_append_sheet(wb, wsI, 'Insights');
+
+    // ---- Weekly Trends sheet: one row per week, chart-ready ----
+    const wt = [['Week','Dates','Days tracked','Full discipline','Clean food days','Dose adherence %','Water avg (ml)','Mouth avg','Calories avg','Walks']];
+    const totalWeeks = Math.ceil(dayIndex(realToday)/7);
+    for(let w=1; w<=totalWeeks; w++){
+      const endI = Math.min(w*7, dayIndex(realToday));
+      const agg = windowAgg(endI, endI-(w-1)*7);
+      wt.push(['W'+w, fmt(dateOfIndex((w-1)*7+1))+' – '+fmt(dateOfIndex(endI)), agg.tracked, agg.full, agg.clean, agg.medPct, agg.waterAvg, agg.mouthAvg||'', agg.kcalAvg||agg.calAvg||'', agg.walks]);
+    }
+    const wsW = XLSX.utils.aoa_to_sheet(wt);
+    wsW['!cols'] = [{wch:6},{wch:18},{wch:12},{wch:14},{wch:14},{wch:16},{wch:14},{wch:10},{wch:12},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, wsW, 'Weekly Trends');
     // Sheet 2-4: vitals
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
       [['Date','Systolic','Diastolic'], ...vitals.bp.map(r=>[r.d,r.sys,r.dia])]), 'BP');
