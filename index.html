@@ -565,6 +565,15 @@
         <input type="file" id="importFile" accept=".json,application/json" style="display:none">
       </div>
       <div style="padding:8px 0;border-top:1px dashed var(--line)">
+        <label style="font-size:13.5px;font-weight:600">Google Drive auto-backup</label>
+        <div class="hint" style="margin:4px 0 8px" id="driveStatus">Backs up to your Drive every time you open the app. One-time setup needed (see steps from Claude).</div>
+        <input type="text" class="keyinput" id="gClientId" placeholder="Paste your Google OAuth Client ID (…apps.googleusercontent.com)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn small" onclick="driveSetup()">Connect Drive</button>
+          <button class="btn small" style="background:var(--jade)" onclick="driveBackup(true)">Back up now</button>
+        </div>
+      </div>
+      <div style="padding:8px 0;border-top:1px dashed var(--line)">
         <label style="font-size:13.5px;font-weight:600">Install on phone</label>
         <div class="hint" style="margin:4px 0 8px" id="installStatus">Checking install readiness…</div>
         <button class="btn small" id="installBtn" onclick="doInstall()">Install app</button>
@@ -1376,6 +1385,93 @@ async function updateBackupStatus(){
   }
 }
 
+/* ---------------- Google Drive backup ---------------- */
+let driveToken = null;
+function loadGIS(){
+  return new Promise((res, rej)=>{
+    if(window.google && google.accounts && google.accounts.oauth2) return res();
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = ()=>res();
+    s.onerror = ()=>rej(new Error('needs internet'));
+    document.head.appendChild(s);
+  });
+}
+function driveMsg(t){ const el=document.getElementById('driveStatus'); if(el) el.textContent = t; }
+async function driveGetToken(interactive){
+  await loadGIS();
+  return new Promise((res)=>{
+    try{
+      const tc = google.accounts.oauth2.initTokenClient({
+        client_id: cfg.gClientId,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: (t)=>{ driveToken = t && t.access_token ? t.access_token : null; res(!!driveToken); },
+        error_callback: ()=>res(false)
+      });
+      tc.requestAccessToken({prompt: interactive ? '' : 'none'});
+    }catch(e){ res(false); }
+  });
+}
+window.driveSetup = async ()=>{
+  const id = document.getElementById('gClientId').value.trim();
+  if(!id || !id.includes('apps.googleusercontent.com')){ driveMsg('✗ Paste a valid OAuth Client ID first (ends with apps.googleusercontent.com).'); return; }
+  cfg.gClientId = id; save();
+  driveMsg('Opening Google sign-in…');
+  const ok = await driveGetToken(true);
+  if(ok){ cfg.driveAuto = true; save(); driveMsg('✓ Connected. Backing up…'); driveBackup(true); }
+  else driveMsg('✗ Sign-in did not complete — check the Client ID and that this site is an authorized origin.');
+};
+async function buildDump(){
+  const dump = { app:'sadhana-180', version:1, exported: new Date().toISOString(), data:{} };
+  try{
+    const ls = await window.storage.list('s180:');
+    if(ls && ls.keys){
+      for(const k of ls.keys){
+        if(k==='s180:lastBackup') continue;
+        try{ const r = await window.storage.get(k); if(r && r.value!==undefined) dump.data[k]=r.value; }catch(e){}
+      }
+    }
+  }catch(e){}
+  return JSON.stringify(dump);
+}
+window.driveBackup = async (manual)=>{
+  if(!cfg.gClientId){ if(manual) driveMsg('Set up the Client ID and Connect first.'); return; }
+  if(!driveToken){
+    const ok = await driveGetToken(!!manual);
+    if(!ok){ if(manual) driveMsg('✗ Could not get Drive access — tap Connect Drive to re-authorize.'); else driveMsg('Drive backup paused — tap "Back up now" to re-authorize.'); return; }
+  }
+  try{
+    const body = await buildDump();
+    let resp;
+    if(cfg.driveFileId){
+      resp = await fetch('https://www.googleapis.com/upload/drive/v3/files/'+cfg.driveFileId+'?uploadType=media', {
+        method:'PATCH', headers:{'Authorization':'Bearer '+driveToken, 'Content-Type':'application/json'}, body});
+      if(resp.status===404){ cfg.driveFileId=null; return driveBackup(manual); }
+    } else {
+      const meta = {name:'sadhana-180-backup.json'};
+      const boundary = 'sadhana180b';
+      const mp = '--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+JSON.stringify(meta)+
+        '\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+boundary+'--';
+      resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method:'POST', headers:{'Authorization':'Bearer '+driveToken, 'Content-Type':'multipart/related; boundary='+boundary}, body: mp});
+    }
+    if(resp.ok){
+      const j = await resp.json();
+      if(j.id) cfg.driveFileId = j.id;
+      cfg.lastDriveBackup = realToday; save();
+      driveMsg('✓ Backed up to your Drive ('+new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})+') — file: sadhana-180-backup.json');
+    } else if(resp.status===401){
+      driveToken=null;
+      if(manual){ const ok2 = await driveGetToken(true); if(ok2) return driveBackup(true); }
+      driveMsg('Drive session expired — tap "Back up now" to re-authorize.');
+    } else {
+      driveMsg('✗ Drive backup failed (HTTP '+resp.status+').');
+    }
+  }catch(e){
+    if(manual) driveMsg('✗ Drive backup failed: '+e.message);
+  }
+};
+
 /* ---------------- Excel export ---------------- */
 function loadSheetJS(){
   return new Promise((res, rej)=>{
@@ -1586,12 +1682,16 @@ function renderRows(){
        <button class="chk ${on?'on':''}" onclick="tog('meds','${m.id}')"></button></div>`);
   });
   const fr = document.getElementById('foodRows'); fr.innerHTML='';
-  FOOD.forEach(f=>{
-    const on = !!day.food[f.id];
-    fr.insertAdjacentHTML('beforeend',
-      `<div class="row"><div class="txt"><div class="name">${f.name}</div><div class="when">${f.when}</div></div>
-       <button class="chk ${on?'on':''}" onclick="tog('food','${f.id}')"></button></div>`);
-  });
+  if(day.vrat){
+    fr.innerHTML = '<div class="note" style="margin:0">🙏 Vrat day — all food rules are auto-credited and locked. Eat farali (fruits, milk, dry fruits, rajgira, singhada); the AI coach is in fasting mode. Untick Vrat above to restore normal rules.</div>';
+  } else {
+    FOOD.forEach(f=>{
+      const on = !!day.food[f.id];
+      fr.insertAdjacentHTML('beforeend',
+        `<div class="row"><div class="txt"><div class="name">${f.name}</div><div class="when">${f.when}</div></div>
+         <button class="chk ${on?'on':''}" onclick="tog('food','${f.id}')"></button></div>`);
+    });
+  }
   document.getElementById('medCard').style.display = cfg.showMeds ? '' : 'none';
   renderStock();
 }
@@ -1862,7 +1962,7 @@ document.getElementById('walkChk').addEventListener('click',()=>{
   day.walk=!day.walk; cache[today]=day; renderScales(); renderScore(); save();
 });
 document.getElementById('vratChk').addEventListener('click',()=>{
-  day.vrat=!day.vrat; cache[today]=day; renderScales(); renderScore(); save();
+  day.vrat=!day.vrat; cache[today]=day; renderRows(); renderScales(); renderScore(); save();
 });
 window.logHealth = ()=>{
   const s = +document.getElementById('stepsIn').value || null;
@@ -1968,6 +2068,14 @@ window.showTab = t=>{
   }
   updateInstallStatus();
   updateBackupStatus();
+  if(cfg.gClientId){
+    const gEl = document.getElementById('gClientId');
+    if(gEl) gEl.value = cfg.gClientId;
+    if(cfg.driveAuto){
+      driveMsg(cfg.lastDriveBackup ? 'Connected · last Drive backup '+fmt(cfg.lastDriveBackup)+' · backing up…' : 'Connected · backing up…');
+      setTimeout(()=>driveBackup(false), 2500);
+    }
+  }
   const ed = document.getElementById('editDate');
   ed.value = today; ed.max = realToday; ed.min = cfg.start;
   ed.addEventListener('change', e=>{ if(e.target.value) setEditDate(e.target.value); });
